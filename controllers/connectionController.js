@@ -1,0 +1,88 @@
+const Connection = require('../models/Connection');
+const User = require('../models/User');
+
+let ioInstance;
+exports.setIo = (io) => { ioInstance = io; };
+
+// @desc    Send connection request
+// @route   POST /api/connections/request/:userId
+exports.sendRequest = async (req, res, next) => {
+    try {
+        const receiverId = req.params.userId;
+        const senderId = req.user._id;
+
+        if (receiverId === senderId.toString()) {
+            return res.status(400).json({ message: "Cannot connect with yourself." });
+        }
+
+        const existing = await Connection.findOne({ sender: senderId, receiver: receiverId });
+        if (existing) {
+            return res.status(400).json({ message: `Connection already ${existing.status.toLowerCase()}.` });
+        }
+
+        const connection = await Connection.create({ sender: senderId, receiver: receiverId });
+        
+        res.status(201).json({ message: "Connection request sent.", connection });
+    } catch (error) {
+        if (error.code === 11000) return res.status(400).json({ message: "Request already exists." });
+        next(error);
+    }
+};
+
+// @desc    Get all connections for current user (sent or received)
+// @route   GET /api/connections/my
+exports.getMyConnections = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const connections = await Connection.find({
+            $or: [{ sender: userId }, { receiver: userId }]
+        }).populate('sender', 'name role company designation profilePicture').populate('receiver', 'name role company designation profilePicture');
+        
+        res.json(connections);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Respond to connection request
+// @route   PUT /api/connections/:id/respond
+exports.respondRequest = async (req, res, next) => {
+    try {
+        const { status } = req.body; // 'Accepted' or 'Rejected'
+        if (!['Accepted', 'Rejected'].includes(status)) {
+            return res.status(400).json({ message: "Invalid status." });
+        }
+
+        const connection = await Connection.findById(req.params.id);
+        if (!connection) return res.status(404).json({ message: "Connection request not found." });
+
+        if (connection.receiver.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: "Not authorized to respond to this request." });
+        }
+
+        connection.status = status;
+        await connection.save();
+
+        res.json({ message: `Connection ${status.toLowerCase()}`, connection });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Remove a connection
+// @route   DELETE /api/connections/:id
+exports.removeConnection = async (req, res, next) => {
+    try {
+        const connection = await Connection.findById(req.params.id);
+        if (!connection) return res.status(404).json({ message: "Connection not found." });
+
+        if (connection.sender.toString() !== req.user._id.toString() && connection.receiver.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: "Not authorized." });
+        }
+
+        await connection.deleteOne();
+        res.json({ message: "Connection removed." });
+    } catch (error) {
+        next(error);
+    }
+};
