@@ -124,20 +124,30 @@ const deleteAccount = async (req, res) => {
         const Story = require('../models/Story');
         const Forum = require('../models/Forum');
         const Connection = require('../models/Connection');
+        const Message = require('../models/Message');
+        const Notification = require('../models/Notification');
+        const JobApplication = require('../models/JobApplication');
+        const MentorSlot = require('../models/MentorSlot');
 
-        // Cascade delete
+        // Cascade delete all user-related data
         await Promise.all([
             Job.deleteMany({ postedBy: userId }),
             Event.deleteMany({ createdBy: userId }),
-            Mentorship.deleteMany({ $or: [{ mentor: userId }, { mentee: userId }] }),
-            MockInterview.deleteMany({ $or: [{ host: userId }, { attendee: userId }] }),
+            Mentorship.deleteMany({ $or: [{ mentor: userId }, { mentee: userId }, { student: userId }, { alumni: userId }] }),
+            MockInterview.deleteMany({ $or: [{ host: userId }, { attendee: userId }, { student: userId }, { alumni: userId }] }),
             Story.deleteMany({ author: userId }),
             Forum.deleteMany({ author: userId }),
-            Connection.deleteMany({ $or: [{ sender: userId }, { receiver: userId }] })
+            Connection.deleteMany({ $or: [{ sender: userId }, { receiver: userId }] }),
+            Message.deleteMany({ $or: [{ sender: userId }, { receiver: userId }] }),
+            Notification.deleteMany({ user: userId }),
+            JobApplication.deleteMany({ applicant: userId }),
+            MentorSlot.deleteMany({ alumni: userId }),
         ]);
 
         await User.findByIdAndDelete(userId);
 
+        // Clear auth cookie
+        res.cookie('jwt', '', { httpOnly: true, expires: new Date(0) });
         res.json({ message: 'Account and all associated data permanently deleted.' });
     } catch (err) {
         res.status(500).json({ message: err.message });

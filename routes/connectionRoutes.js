@@ -7,6 +7,7 @@ router.use(protect);
 
 router.post('/request/:userId', connectionController.sendRequest);
 router.get('/my', connectionController.getMyConnections);
+router.get('/students-directory', connectionController.getStudentsDirectory);
 router.put('/:id/respond', connectionController.respondRequest);
 router.delete('/:id', connectionController.removeConnection);
 

@@ -36,7 +36,9 @@ exports.getMyConnections = async (req, res, next) => {
         const userId = req.user._id;
         const connections = await Connection.find({
             $or: [{ sender: userId }, { receiver: userId }]
-        }).populate('sender', 'name role company designation profilePicture').populate('receiver', 'name role company designation profilePicture');
+        })
+            .populate('sender',   'name role company designation profilePicture bio skills department year rollNo graduationYear')
+            .populate('receiver', 'name role company designation profilePicture bio skills department year rollNo graduationYear');
         
         res.json(connections);
     } catch (error) {
@@ -82,6 +84,28 @@ exports.removeConnection = async (req, res, next) => {
 
         await connection.deleteOne();
         res.json({ message: "Connection removed." });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get students from the same college (for Network → Students tab)
+// @route   GET /api/connections/students-directory
+exports.getStudentsDirectory = async (req, res, next) => {
+    try {
+        const me = await User.findById(req.user._id).select('college');
+        if (!me || !me.college) {
+            return res.json({ noCollege: true, students: [] });
+        }
+        const students = await User.find({
+            role: 'student',
+            college: me.college,
+            _id: { $ne: req.user._id },
+        }).select('name email department year rollNo bio skills profilePicture college');
+
+        const College = require('../models/College');
+        const col = await College.findById(me.college).select('name');
+        res.json({ students, collegeName: col?.name || '', noCollege: false });
     } catch (error) {
         next(error);
     }

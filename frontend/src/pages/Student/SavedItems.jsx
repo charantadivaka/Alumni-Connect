@@ -3,13 +3,31 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { bookmarkService } from '../../services/otherServices';
 
 const MODEL_LABELS = {
-  Job:    { icon: '💼', label: 'Job', color: '#6c63ff' },
-  Event:  { icon: '📅', label: 'Event', color: '#00d4ff' },
-  Story:  { icon: '✨', label: 'Story', color: '#ff6b9d' },
-  Forum:  { icon: '🗣️', label: 'Forum Post', color: '#22d3a3' },
+  Job:          { icon: '💼', label: 'Job',           color: '#6c63ff' },
+  Application:  { icon: '📋', label: 'Application',   color: '#8b5cf6' },
+  Mentorship:   { icon: '🎓', label: 'Mentorship',    color: '#22d3a3' },
+  MockInterview:{ icon: '🎤', label: 'Mock Interview', color: '#00d4ff' },
+  Referral:     { icon: '🤝', label: 'Referral',      color: '#fbbf24' },
+  Resume:       { icon: '📄', label: 'Resume',        color: '#f87171' },
+  Event:        { icon: '📅', label: 'Event',         color: '#00d4ff' },
+  Forum:        { icon: '🗣️', label: 'Forum Post',    color: '#22d3a3' },
+  Story:        { icon: '✨', label: 'Story',         color: '#ff6b9d' },
 };
 
-const MODEL_OPTIONS = ['', 'Job', 'Event', 'Story', 'Forum'];
+const MODEL_OPTIONS = ['', 'Job', 'Application', 'Mentorship', 'MockInterview', 'Referral', 'Resume', 'Event', 'Forum', 'Story'];
+
+const MODEL_DISPLAY = {
+  '':             'All Types',
+  Job:            '💼 Job',
+  Application:    '📋 Application',
+  Mentorship:     '🎓 Mentorship',
+  MockInterview:  '🎤 Mock Interview',
+  Referral:       '🤝 Referral',
+  Resume:         '📄 Resume',
+  Event:          '📅 Event',
+  Forum:          '🗣️ Forum Post',
+  Story:          '✨ Story',
+};
 
 // ── Detail Modal ──────────────────────────────────────────────────────────────
 const DetailModal = ({ bm, onClose, onRemove }) => {
@@ -218,11 +236,16 @@ const SavedItems = () => {
         <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 15 }}>
           <div>
             <h1>Saved Items</h1>
-            <p>Click any item to view full details. Bookmark jobs, events, stories &amp; forum posts.</p>
+            <p>Your bookmarked jobs, events, stories, forum posts &amp; more.</p>
           </div>
-          <select className="form-input" style={{ width: 'auto' }} value={filterModel} onChange={e => setFilterModel(e.target.value)}>
-            {MODEL_OPTIONS.map(m => <option key={m} value={m}>{m || 'All Types'}</option>)}
-          </select>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select className="form-input" style={{ width: 'auto' }} value={filterModel} onChange={e => setFilterModel(e.target.value)}>
+              {MODEL_OPTIONS.map(m => <option key={m} value={m}>{MODEL_DISPLAY[m]}</option>)}
+            </select>
+            <button className="btn btn-outline btn-sm" title="Saved items are bookmarked from job board, events, forum & stories pages" style={{ whiteSpace: 'nowrap' }}>
+              🔖 Save Items
+            </button>
+          </div>
         </div>
 
         {error && <div className="card" style={{ color: 'var(--clr-danger)', marginBottom: 20 }}>{error}</div>}

@@ -14,14 +14,6 @@ export const referralService = {
   respond:    (id, data)    => api.put(`/referrals/${id}/respond`, data),
 };
 
-export const startupService = {
-  getAll:              (filters = {}) => api.get('/startups'),
-  getMy:               ()             => api.get('/startups/my'),
-  createOrUpdate:      (data)         => api.post('/startups', data),
-  collaborate:         (id, data)     => api.post(`/startups/${id}/collaborate`, data),
-  respondCollaboration:(id, reqId, data) => api.put(`/startups/${id}/collaborate/${reqId}`, data),
-};
-
 export const bookmarkService = {
   getAll:   (model)        => api.get(model ? `/bookmarks?model=${model}` : '/bookmarks'),
   toggle:   (data)         => api.post('/bookmarks', data),
@@ -36,6 +28,8 @@ export const adminService = {
   verifyAlumni:      (id, data)     => api.put(`/admin/users/${id}/verify`, data),
   toggleSuspend:     (id)           => api.put(`/admin/users/${id}/suspend`),
   getAnalytics:      ()             => api.get('/admin/analytics'),
+  getReportedJobs:   ()             => api.get('/admin/jobs/reported'),
+  getReportedEvents: ()             => api.get('/admin/events/reported'),
 };
 
 export const aiService = {

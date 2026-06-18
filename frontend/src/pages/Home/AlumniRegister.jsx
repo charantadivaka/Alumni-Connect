@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import { collegeService } from '../../services/collegeService';
 import { PublicNavbar } from '../../components/layout/PublicNavbar';
+import OtpVerification from '../../components/auth/OtpVerification';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 30 }, (_, i) => CURRENT_YEAR - i);
 const INDUSTRIES = ['Technology','Finance','Healthcare','Education','Consulting','E-commerce','Media','Manufacturing','Other'];
+const SKILLS_SUGGESTIONS = ['React','Node.js','Python','Java','MongoDB','SQL','AWS','Git','TypeScript','Machine Learning'];
 
 const AlumniRegister = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: '', email: '', password: '', collegeRollNumber: '',
     college: '', // college _id
@@ -23,6 +22,9 @@ const AlumniRegister = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
+
+  // OTP flow state
+  const [otpSent, setOtpSent] = useState(false);
 
   // College state
   const [colleges, setColleges] = useState([]);
@@ -70,21 +72,20 @@ const AlumniRegister = () => {
 
   const handleSubmit = async e => {
     e.preventDefault(); setError(''); setLoading(true);
-    // Client-side guard: if a college is selected and roll no. doesn't match, block submit
     if (selectedCollege && rollValidation === false) {
       setError(`Invalid roll number format. Expected format for ${selectedCollege.name}: ${selectedCollege.exampleFormat}`);
       setLoading(false);
       return;
     }
     try {
-      const data = await authService.register({
+      // Step 1: send OTP to email
+      await authService.sendOtp({
         ...form,
         role: 'alumni',
         graduationYear: Number(form.graduationYear),
         college: form.college || undefined,
       });
-      login(data);
-      navigate('/alumni/dashboard');
+      setOtpSent(true);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -98,6 +99,21 @@ const AlumniRegister = () => {
     rollValidation === false ? '1.5px solid var(--clr-danger)' :
     undefined;
 
+  // ── OTP Screen ────────────────────────────────────────────────────────────
+  if (otpSent) {
+    return (
+      <>
+        <PublicNavbar />
+        <OtpVerification
+          email={form.email}
+          role="alumni"
+          onBack={() => setOtpSent(false)}
+        />
+      </>
+    );
+  }
+
+  // ── Registration Form ─────────────────────────────────────────────────────
   return (
     <div>
       <PublicNavbar />
@@ -240,6 +256,13 @@ const AlumniRegister = () => {
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill(skillInput))} />
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => addSkill(skillInput)}>Add</button>
               </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+                {SKILLS_SUGGESTIONS.filter(s => !form.skills.includes(s)).map(s => (
+                  <span key={s} onClick={() => addSkill(s)} style={{ cursor: 'pointer', fontSize: '0.75rem', padding: '2px 8px', background: 'var(--clr-bg-elevated)', borderRadius: 'var(--r-full)', color: 'var(--clr-text-muted)', border: '1px solid var(--clr-border)' }}>
+                    + {s}
+                  </span>
+                ))}
+              </div>
             </div>
 
             <div className="form-group">
@@ -254,8 +277,19 @@ const AlumniRegister = () => {
               {form.idProof && <span className="text-sm" style={{ color: 'var(--clr-success)' }}>✓ File uploaded</span>}
             </div>
 
+            {/* Email OTP notice */}
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+              background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)',
+              borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: '0.83rem',
+              color: 'var(--clr-text-muted)',
+            }}>
+              <span style={{ fontSize: '1rem', marginTop: 1 }}>📧</span>
+              <span>A <strong style={{ color: 'var(--clr-text)' }}>6-digit verification code</strong> will be sent to your email address after you click "Continue".</span>
+            </div>
+
             <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
-              {loading ? 'Submitting…' : 'Create Alumni Account'}
+              {loading ? 'Sending OTP…' : 'Continue →'}
             </button>
           </form>
 

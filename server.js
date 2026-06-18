@@ -104,7 +104,6 @@ app.use('/api/forums',        require('./routes/forumRoutes'));
 app.use('/api/stories',       require('./routes/storyRoutes'));
 app.use('/api/resumes',       require('./routes/resumeRoutes'));
 app.use('/api/referrals',     require('./routes/referralRoutes'));
-app.use('/api/startups',      require('./routes/startupRoutes'));
 app.use('/api/bookmarks',     require('./routes/bookmarkRoutes'));
 app.use('/api/connections',   require('./routes/connectionRoutes'));
 app.use('/api/admin',         require('./routes/adminRoutes'));

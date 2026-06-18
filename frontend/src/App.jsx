@@ -16,34 +16,20 @@ import About          from './pages/Home/About';
 // Student pages
 import StudentDashboard    from './pages/Student/Dashboard';
 import StudentProfile      from './pages/Student/StudentProfile';
-import BrowseAlumni        from './pages/Student/BrowseAlumni';
+import Network             from './pages/Student/Network';
 import AlumniProfile       from './pages/Student/AlumniProfile';
-import JobBoard            from './pages/Student/JobBoard';
-import MyApplications      from './pages/Student/MyApplications';
-import MentorshipSessions  from './pages/Student/MentorshipSessions';
-import MockInterviews      from './pages/Student/MockInterviews';
-import MyReferrals         from './pages/Student/MyReferrals';
-import MyResumes           from './pages/Student/MyResumes';
+import MyCircle            from './pages/Student/MyCircle';
+import JobsHub             from './pages/Student/JobsHub';
+import CommunityHub        from './pages/Student/CommunityHub';
 import StudentMessages     from './pages/Student/Messages';
-import StudentEvents       from './pages/Student/Events';
-import StudentForum        from './pages/Student/Forum';
-import StudentStories      from './pages/Student/Stories';
 import SavedItems          from './pages/Student/SavedItems';
-import AlumniMap           from './pages/Student/AlumniMap';
 
 // Alumni pages
 import AlumniDashboard        from './pages/Alumni/Dashboard';
 import AlumniProfilePage      from './pages/Alumni/AlumniProfile';
-import ManageJobs             from './pages/Alumni/ManageJobs';
-import ManageApplications     from './pages/Alumni/ManageApplications';
-import MentorshipRequests     from './pages/Alumni/MentorshipRequests';
-import ManageSlots            from './pages/Alumni/ManageSlots';
-import InterviewRequests      from './pages/Alumni/InterviewRequests';
-import ManageReferrals        from './pages/Alumni/ManageReferrals';
+import AlumniJobsHub          from './pages/Alumni/JobsHub';
+import AlumniCommunityHub     from './pages/Alumni/CommunityHub';
 import AlumniMessages         from './pages/Alumni/Messages';
-import AlumniEvents           from './pages/Alumni/Events';
-import AlumniStories          from './pages/Alumni/Stories';
-import MyStartup              from './pages/Alumni/MyStartup';
 
 // Admin pages
 import AdminDashboard       from './pages/Admin/Dashboard';
@@ -76,7 +62,7 @@ const ThemeToggle = () => {
   };
 
   return (
-    <button 
+    <button
       onClick={toggleTheme}
       style={{
         position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
@@ -113,36 +99,49 @@ const App = () => {
         <Route path="/register/alumni"  element={<AlumniRegister />} />
 
         {/* ── Student ── */}
-        <Route path="/student/dashboard"   element={<RoleGuard role="student"><StudentDashboard /></RoleGuard>} />
-        <Route path="/student/profile"     element={<RoleGuard role="student"><StudentProfile /></RoleGuard>} />
-        <Route path="/student/browse"      element={<RoleGuard role="student"><BrowseAlumni /></RoleGuard>} />
-        <Route path="/student/alumni/:id"  element={<RoleGuard role="student"><AlumniProfile /></RoleGuard>} />
-        <Route path="/student/jobs"        element={<RoleGuard role="student"><JobBoard /></RoleGuard>} />
-        <Route path="/student/applications" element={<RoleGuard role="student"><MyApplications /></RoleGuard>} />
-        <Route path="/student/mentorship"  element={<RoleGuard role="student"><MentorshipSessions /></RoleGuard>} />
-        <Route path="/student/interviews"  element={<RoleGuard role="student"><MockInterviews /></RoleGuard>} />
-        <Route path="/student/referrals"   element={<RoleGuard role="student"><MyReferrals /></RoleGuard>} />
-        <Route path="/student/resumes"     element={<RoleGuard role="student"><MyResumes /></RoleGuard>} />
-        <Route path="/student/messages"    element={<RoleGuard role="student"><StudentMessages /></RoleGuard>} />
-        <Route path="/student/events"      element={<RoleGuard role="student"><StudentEvents /></RoleGuard>} />
-        <Route path="/student/forum"       element={<RoleGuard role="student"><StudentForum /></RoleGuard>} />
-        <Route path="/student/stories"     element={<RoleGuard role="student"><StudentStories /></RoleGuard>} />
-        <Route path="/student/saved"       element={<RoleGuard role="student"><SavedItems /></RoleGuard>} />
-        <Route path="/student/map"         element={<RoleGuard role="student"><AlumniMap /></RoleGuard>} />
+        <Route path="/student/dashboard"  element={<RoleGuard role="student"><StudentDashboard /></RoleGuard>} />
+        <Route path="/student/profile"    element={<RoleGuard role="student"><StudentProfile /></RoleGuard>} />
+        <Route path="/student/network"    element={<RoleGuard role="student"><Network /></RoleGuard>} />
+        <Route path="/student/alumni/:id" element={<RoleGuard role="student"><AlumniProfile /></RoleGuard>} />
+        <Route path="/student/circle"     element={<RoleGuard role="student"><MyCircle /></RoleGuard>} />
+        <Route path="/student/jobs-hub"   element={<RoleGuard role="student"><JobsHub /></RoleGuard>} />
+        <Route path="/student/jobs-hub/:section" element={<RoleGuard role="student"><JobsHub /></RoleGuard>} />
+        <Route path="/student/community"  element={<RoleGuard role="student"><CommunityHub /></RoleGuard>} />
+        <Route path="/student/messages"   element={<RoleGuard role="student"><StudentMessages /></RoleGuard>} />
+        <Route path="/student/saved"      element={<RoleGuard role="student"><SavedItems /></RoleGuard>} />
+
+        {/* Legacy redirects for old direct routes */}
+        <Route path="/student/jobs"        element={<Navigate to="/student/jobs-hub" replace />} />
+        <Route path="/student/applications" element={<Navigate to="/student/jobs-hub" replace />} />
+        <Route path="/student/mentorship"  element={<Navigate to="/student/jobs-hub" replace />} />
+        <Route path="/student/interviews"  element={<Navigate to="/student/jobs-hub" replace />} />
+        <Route path="/student/referrals"   element={<Navigate to="/student/jobs-hub" replace />} />
+        <Route path="/student/resumes"     element={<Navigate to="/student/jobs-hub" replace />} />
+        <Route path="/student/events"      element={<Navigate to="/student/community" replace />} />
+        <Route path="/student/forum"       element={<Navigate to="/student/community" replace />} />
+        <Route path="/student/stories"     element={<Navigate to="/student/community" replace />} />
+        <Route path="/student/browse"      element={<Navigate to="/student/network" replace />} />
 
         {/* ── Alumni ── */}
         <Route path="/alumni/dashboard"    element={<RoleGuard role="alumni"><AlumniDashboard /></RoleGuard>} />
         <Route path="/alumni/profile"      element={<RoleGuard role="alumni"><AlumniProfilePage /></RoleGuard>} />
-        <Route path="/alumni/jobs"         element={<RoleGuard role="alumni"><ManageJobs /></RoleGuard>} />
-        <Route path="/alumni/applications" element={<RoleGuard role="alumni"><ManageApplications /></RoleGuard>} />
-        <Route path="/alumni/mentorship"   element={<RoleGuard role="alumni"><MentorshipRequests /></RoleGuard>} />
-        <Route path="/alumni/slots"        element={<RoleGuard role="alumni"><ManageSlots /></RoleGuard>} />
-        <Route path="/alumni/interviews"   element={<RoleGuard role="alumni"><InterviewRequests /></RoleGuard>} />
-        <Route path="/alumni/referrals"    element={<RoleGuard role="alumni"><ManageReferrals /></RoleGuard>} />
+        <Route path="/alumni/network"      element={<RoleGuard role="alumni"><Network /></RoleGuard>} />
+        <Route path="/alumni/alumni/:id"   element={<RoleGuard role="alumni"><AlumniProfile /></RoleGuard>} />
+        <Route path="/alumni/jobs-hub"     element={<RoleGuard role="alumni"><AlumniJobsHub /></RoleGuard>} />
+        <Route path="/alumni/jobs-hub/:section" element={<RoleGuard role="alumni"><AlumniJobsHub /></RoleGuard>} />
+        <Route path="/alumni/community"    element={<RoleGuard role="alumni"><AlumniCommunityHub /></RoleGuard>} />
+        <Route path="/alumni/saved"        element={<RoleGuard role="alumni"><SavedItems /></RoleGuard>} />
         <Route path="/alumni/messages"     element={<RoleGuard role="alumni"><AlumniMessages /></RoleGuard>} />
-        <Route path="/alumni/events"       element={<RoleGuard role="alumni"><AlumniEvents /></RoleGuard>} />
-        <Route path="/alumni/stories"      element={<RoleGuard role="alumni"><AlumniStories /></RoleGuard>} />
-        <Route path="/alumni/startup"      element={<RoleGuard role="alumni"><MyStartup /></RoleGuard>} />
+
+        {/* Legacy Redirects for Alumni */}
+        <Route path="/alumni/jobs"         element={<Navigate to="/alumni/jobs-hub" replace />} />
+        <Route path="/alumni/applications" element={<Navigate to="/alumni/jobs-hub" replace />} />
+        <Route path="/alumni/mentorship"   element={<Navigate to="/alumni/jobs-hub" replace />} />
+        <Route path="/alumni/slots"        element={<Navigate to="/alumni/jobs-hub" replace />} />
+        <Route path="/alumni/interviews"   element={<Navigate to="/alumni/jobs-hub" replace />} />
+        <Route path="/alumni/referrals"    element={<Navigate to="/alumni/jobs-hub" replace />} />
+        <Route path="/alumni/events"       element={<Navigate to="/alumni/community" replace />} />
+        <Route path="/alumni/stories"      element={<Navigate to="/alumni/community" replace />} />
 
         {/* ── Admin ── */}
         <Route path="/admin/dashboard"     element={<RoleGuard role="admin"><AdminDashboard /></RoleGuard>} />

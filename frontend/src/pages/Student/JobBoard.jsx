@@ -78,7 +78,7 @@ const JobBoard = () => {
         await jobService.report(jobId);
         alert('Job reported to admin successfully.');
       } catch (err) {
-        alert(err.response?.data?.message || err.message || 'Failed to report job');
+        alert(err.message || 'Failed to report job');
       }
     }
   };
@@ -197,7 +197,7 @@ const JobBoard = () => {
                 key={job._id} 
                 className="card" 
                 onClick={() => handleCardClick(job)}
-                style={{ cursor: 'pointer', transition: 'transform 0.2s', ':hover': { transform: 'translateY(-2px)' }, position: 'relative' }}
+                style={{ cursor: 'pointer', transition: 'transform 0.2s', position: 'relative' }}
               >
                 <button 
                   onClick={(e) => handleToggleBookmark(e, job._id)}

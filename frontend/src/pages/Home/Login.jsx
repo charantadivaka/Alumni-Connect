@@ -12,6 +12,7 @@ const Login = () => {
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
 
+
   const handleChange = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSubmit = async e => {
@@ -27,6 +28,8 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+
 
   return (
     <div>
@@ -75,12 +78,16 @@ const Login = () => {
             </button>
           </form>
 
+
+
           <p style={{ textAlign: 'center', marginTop: 'var(--sp-lg)', fontSize: '0.875rem', color: 'var(--clr-text-muted)' }}>
             Don't have an account?{' '}
             <Link to="/role-select" style={{ color: 'var(--clr-primary)', fontWeight: 600 }}>Get started</Link>
           </p>
         </div>
       </div>
+
+
     </div>
   );
 };

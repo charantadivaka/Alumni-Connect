@@ -5,6 +5,9 @@ const Story = require('../models/Story');
 const Event = require('../models/Event');
 const Forum = require('../models/Forum');
 const JobApplication = require('../models/JobApplication');
+const { invalidatePattern } = require('../config/redis');
+
+const ANALYTICS_CACHE_PATTERN = '__express__/api/admin/analytics*';
 
 // @desc  Get all users (with filters)
 // @route GET /api/admin/users
@@ -52,6 +55,7 @@ const verifyAlumni = async (req, res) => {
             { new: true }
         ).select('-password');
         if (!user) return res.status(404).json({ message: 'User not found' });
+        await invalidatePattern(ANALYTICS_CACHE_PATTERN); // user counts changed
         res.json(user);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -67,6 +71,7 @@ const toggleSuspend = async (req, res) => {
         if (user.role === 'admin') return res.status(400).json({ message: 'Cannot suspend admin' });
         user.isSuspended = !user.isSuspended;
         await user.save();
+        await invalidatePattern(ANALYTICS_CACHE_PATTERN); // suspension status changed
         res.json({ isSuspended: user.isSuspended, message: user.isSuspended ? 'User suspended' : 'User reactivated' });
     } catch (err) {
         res.status(500).json({ message: err.message });

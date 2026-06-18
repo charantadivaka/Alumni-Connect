@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import { collegeService } from '../../services/collegeService';
 import { PublicNavbar } from '../../components/layout/PublicNavbar';
+import OtpVerification from '../../components/auth/OtpVerification';
 
 const SKILLS_SUGGESTIONS = ['React','Node.js','Python','Java','MongoDB','SQL','AWS','Git','TypeScript','Machine Learning'];
 const YEARS = [1, 2, 3, 4];
 
 const StudentRegister = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: '', email: '', password: '', collegeRollNumber: '',
     college: '', // college _id
@@ -21,6 +19,9 @@ const StudentRegister = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
+
+  // OTP flow state
+  const [otpSent, setOtpSent] = useState(false); // true → show OTP screen
 
   // College state
   const [colleges, setColleges] = useState([]);
@@ -66,15 +67,16 @@ const StudentRegister = () => {
       return;
     }
     try {
-      const data = await authService.register({
+      // Step 1: send OTP to email (backend validates fields + sends email)
+      await authService.sendOtp({
         ...form, role: 'student',
         careerInterests: form.careerInterests.split(',').map(s => s.trim()).filter(Boolean),
         currentYear: Number(form.currentYear),
         gpa: form.gpa ? Number(form.gpa) : undefined,
         college: form.college || undefined,
       });
-      login(data);
-      navigate('/student/dashboard');
+      // Show OTP verification screen
+      setOtpSent(true);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -88,6 +90,21 @@ const StudentRegister = () => {
     rollValidation === false ? '1.5px solid var(--clr-danger)' :
     undefined;
 
+  // ── OTP Screen ────────────────────────────────────────────────────────────
+  if (otpSent) {
+    return (
+      <>
+        <PublicNavbar />
+        <OtpVerification
+          email={form.email}
+          role="student"
+          onBack={() => setOtpSent(false)}
+        />
+      </>
+    );
+  }
+
+  // ── Registration Form ─────────────────────────────────────────────────────
   return (
     <div>
       <PublicNavbar />
@@ -226,8 +243,19 @@ const StudentRegister = () => {
               <textarea className="form-input" placeholder="Tell alumni a bit about yourself…" rows={3} value={form.bio} onChange={e => set('bio', e.target.value)} />
             </div>
 
+            {/* Email OTP notice */}
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+              background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)',
+              borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: '0.83rem',
+              color: 'var(--clr-text-muted)',
+            }}>
+              <span style={{ fontSize: '1rem', marginTop: 1 }}>📧</span>
+              <span>A <strong style={{ color: 'var(--clr-text)' }}>6-digit verification code</strong> will be sent to your email address after you click "Continue".</span>
+            </div>
+
             <button className="btn btn-primary btn-full" type="submit" disabled={loading} style={{ marginTop: 'var(--sp-sm)' }}>
-              {loading ? 'Creating Account…' : 'Create Student Account'}
+              {loading ? 'Sending OTP…' : 'Continue →'}
             </button>
           </form>
 

@@ -1,5 +1,9 @@
 const Job = require('../models/Job');
 const JobApplication = require('../models/JobApplication');
+const { invalidatePattern } = require('../config/redis');
+
+// ── Cache key prefix for job list responses ───────────────────────────────────
+const JOB_CACHE_PATTERN = '__express__/api/jobs*';
 
 // @desc  Get all active jobs (with filters)
 // @route GET /api/jobs
@@ -53,6 +57,7 @@ const getJobById = async (req, res) => {
 const createJob = async (req, res) => {
     try {
         const job = await Job.create({ ...req.body, postedBy: req.user._id });
+        await invalidatePattern(JOB_CACHE_PATTERN); // clear cached job listings
         res.status(201).json(job);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -69,6 +74,7 @@ const updateJob = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized' });
         }
         const updated = await Job.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        await invalidatePattern(JOB_CACHE_PATTERN); // clear cached job listings
         res.json(updated);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -87,6 +93,7 @@ const deleteJob = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized' });
         }
         await job.deleteOne();
+        await invalidatePattern(JOB_CACHE_PATTERN); // clear cached job listings
         res.json({ message: 'Job deleted' });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -115,6 +122,7 @@ const toggleJobStatus = async (req, res) => {
         }
         job.isActive = !job.isActive;
         await job.save();
+        await invalidatePattern(JOB_CACHE_PATTERN); // active status changed — invalidate
         res.json({ isActive: job.isActive });
     } catch (err) {
         res.status(500).json({ message: err.message });
