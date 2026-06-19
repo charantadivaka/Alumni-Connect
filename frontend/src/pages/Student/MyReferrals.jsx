@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { referralService } from '../../services/otherServices';
 import { useAuth } from '../../context/AuthContext';
+import '../../styles/Student/MyReferrals.css';
 
 const BADGE = { Pending: 'badge-primary', Submitted: 'badge-success', Rejected: 'badge-danger', 'Not Available': 'badge-ghost' };
 

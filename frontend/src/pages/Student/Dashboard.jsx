@@ -5,32 +5,22 @@ import { useAuth } from '../../context/AuthContext';
 import { jobService } from '../../services/jobService';
 import { mentorshipService, interviewService } from '../../services/mentorshipService';
 import { connectionService } from '../../services/otherServices';
+import '../../styles/Student/Dashboard.css';
 
 /* ── Reusable section card ─────────────────────────────────────────── */
 const SectionCard = ({ title, icon, color, children, linkTo, linkLabel }) => (
-  <div style={{
-    background: 'var(--clr-bg-card)',
-    border: '1px solid var(--clr-border)',
-    borderRadius: 'var(--r-lg)',
-    overflow: 'hidden',
-    boxShadow: 'var(--shadow-card)',
-  }}>
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '16px 20px',
-      borderBottom: '1px solid var(--clr-border)',
-      background: `${color}08`,
-    }}>
-      <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: '1.15rem' }}>{icon}</span> {title}
+  <div className="section-card">
+    <div className="section-card-header" style={{ background: `${color}08` }}>
+      <h2 className="section-card-title">
+        <span className="section-card-icon">{icon}</span> {title}
       </h2>
       {linkTo && (
-        <Link to={linkTo} style={{ fontSize: '0.8rem', color: 'var(--clr-primary)', fontWeight: 600 }}>
+        <Link to={linkTo} className="section-card-link">
           {linkLabel || 'See all →'}
         </Link>
       )}
     </div>
-    <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="section-card-body">
       {children}
     </div>
   </div>
@@ -38,27 +28,17 @@ const SectionCard = ({ title, icon, color, children, linkTo, linkLabel }) => (
 
 /* ── Item row ────────────────────────────────────────────────────────── */
 const ItemRow = ({ primary, secondary, badge, badgeClass = 'badge-primary' }) => (
-  <div style={{
-    display: 'flex', alignItems: 'center', gap: 10,
-    padding: '9px 12px', borderRadius: 'var(--r-md)',
-    background: 'var(--clr-bg-elevated)',
-    border: '1px solid var(--clr-border)',
-    justifyContent: 'space-between',
-  }}>
-    <div style={{ minWidth: 0 }}>
-      <div style={{ fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        {primary}
-      </div>
-      {secondary && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginTop: 2 }}>{secondary}</div>
-      )}
+  <div className="item-row">
+    <div className="item-row-info">
+      <div className="item-row-primary">{primary}</div>
+      {secondary && <div className="item-row-secondary">{secondary}</div>}
     </div>
-    {badge && <span className={`badge ${badgeClass}`} style={{ fontSize: '0.68rem', flexShrink: 0 }}>{badge}</span>}
+    {badge && <span className={`badge ${badgeClass} item-row-badge`}>{badge}</span>}
   </div>
 );
 
 const EmptyMsg = ({ msg }) => (
-  <p style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem', margin: '4px 0' }}>{msg}</p>
+  <p className="text-muted section-empty-msg">{msg}</p>
 );
 
 /* ── Dashboard ───────────────────────────────────────────────────────── */
@@ -98,17 +78,17 @@ const Dashboard = () => {
       <Sidebar />
       <main className="dashboard-main fade-in">
 
-        <div className="page-header" style={{ marginBottom: 28 }}>
+        <div className="page-header">
           <h1>Welcome back, {user?.name?.split(' ')?.[0] || 'Student'}! 👋</h1>
           <p>Here's a snapshot of your network activity and opportunities.</p>
         </div>
 
         {loading ? (
-          <div style={{ padding: 'var(--sp-xl)', textAlign: 'center' }}>
+          <div className="loading-state">
             <span className="spinner" /> Loading…
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: 22 }}>
+          <div className="student-dashboard-grid">
 
             {/* ── New Connections ─────────────────────────────────── */}
             <SectionCard title="New Connections" icon="🤝" color="#6c63ff" linkTo="/student/circle" linkLabel="View My Circle →">
@@ -117,23 +97,17 @@ const Dashboard = () => {
                 : connections.slice(0, 4).map(conn => {
                     const other = conn.sender?._id === user?._id ? conn.receiver : conn.sender;
                     return (
-                      <div key={conn._id} style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        padding: '9px 12px', borderRadius: 'var(--r-md)',
-                        background: 'var(--clr-bg-elevated)', border: '1px solid var(--clr-border)',
-                      }}>
-                        <div className="avatar-placeholder avatar-sm" style={{ width: 34, height: 34, fontSize: '0.8rem', flexShrink: 0 }}>
+                      <div key={conn._id} className="conn-item">
+                        <div className="avatar-placeholder avatar-sm conn-item-avatar">
                           {other?.name?.[0]?.toUpperCase() || '?'}
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {other?.name || 'Unknown'}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', textTransform: 'capitalize' }}>
+                        <div className="conn-item-info">
+                          <div className="conn-item-name">{other?.name || 'Unknown'}</div>
+                          <div className="conn-item-role">
                             {other?.role}{other?.company ? ` · ${other.company}` : ''}
                           </div>
                         </div>
-                        <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>✓ Connected</span>
+                        <span className="badge badge-success conn-item-badge">✓ Connected</span>
                       </div>
                     );
                   })

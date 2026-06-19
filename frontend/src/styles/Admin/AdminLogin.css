@@ -1,0 +1,413 @@
+/* ─── Admin Shared Styles ───────────────────────────────────────────────── */
+
+/* Loading State */
+.loading-state {
+  padding: var(--sp-xl);
+  text-align: center;
+}
+
+/* Stat card emoji */
+.stat-card-emoji {
+  font-size: 2.5rem;
+}
+
+/* Stat card in admin with centered layout */
+.admin-stat-card {
+  text-align: center;
+}
+
+.admin-stat-card-title {
+  margin: 8px 0 0;
+}
+
+/* Page header row with action button */
+.page-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: var(--sp-xl);
+}
+
+/* Feedback banners */
+.feedback-banner {
+  border-radius: var(--r-md);
+  padding: 10px 16px;
+  margin-bottom: var(--sp-md);
+  font-size: 0.875rem;
+}
+
+.feedback-banner--success {
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: var(--clr-success);
+  font-weight: 600;
+}
+
+.feedback-banner--error {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--clr-danger);
+}
+
+/* Table wrapper (card + overflow) */
+.table-wrapper {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table--min-700 { min-width: 700px; }
+.data-table--min-800 { min-width: 800px; }
+
+.table-head {
+  background: var(--clr-bg-elevated);
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.table-cell {
+  padding: 12px 16px;
+}
+
+.table-cell--header {
+  font-weight: 600;
+}
+
+.table-row {
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-cell--role {
+  text-transform: capitalize;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Empty table message */
+.table-empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--clr-text-muted);
+}
+
+/* User search/filter row */
+.page-header-controls {
+  display: flex;
+  gap: 8px;
+}
+
+/* ─── Analytics ─────────────────────────────────────────────────────────── */
+.analytics-section-title {
+  margin-bottom: var(--sp-md);
+}
+
+.analytics-grid {
+  margin-bottom: var(--sp-lg);
+}
+
+.analytics-card-primary {
+  border-top: 4px solid var(--clr-primary);
+  text-align: center;
+}
+
+.analytics-card-success {
+  border-top: 4px solid var(--clr-success);
+  text-align: center;
+}
+
+.analytics-card-emoji {
+  font-size: 2rem;
+}
+
+.analytics-card-stat {
+  margin: 8px 0 0;
+}
+
+.analytics-growth-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.analytics-growth-label {
+  margin: 0;
+  color: var(--clr-text-muted);
+}
+
+.analytics-growth-value {
+  margin: 8px 0 0;
+  color: var(--clr-primary);
+}
+
+.analytics-growth-icon {
+  font-size: 2.5rem;
+}
+
+/* ─── Manage Colleges ────────────────────────────────────────────────────── */
+
+/* College table cells */
+.college-name { font-weight: 600; }
+.college-desc { font-size: 0.75rem; color: var(--clr-text-muted); margin-top: 2px; }
+
+.college-pattern-code {
+  background: var(--clr-bg-elevated);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  word-break: break-all;
+}
+
+.college-example-badge {
+  background: var(--clr-primary-glow);
+  color: var(--clr-primary);
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+/* Tip box */
+.tip-box {
+  margin-top: var(--sp-lg);
+  padding: 14px 18px;
+  background: var(--clr-bg-elevated);
+  border-radius: var(--r-md);
+  border: 1px solid var(--clr-border);
+  font-size: 0.85rem;
+  color: var(--clr-text-muted);
+}
+
+.tip-box-strong { color: var(--clr-text); }
+
+.tip-box-code {
+  background: var(--clr-bg-card);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* Modal overlay */
+.modal-overlay-custom {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* College form card */
+.college-form-card {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.college-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--sp-lg);
+}
+
+.college-form-title { margin: 0; }
+
+.college-form-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.4rem;
+  color: var(--clr-text-muted);
+  transition: color var(--tr-fast);
+}
+
+.college-form-close:hover { color: var(--clr-text); }
+
+/* Regex pattern input */
+.regex-input { font-family: monospace; font-size: 0.9rem; }
+
+.regex-hint {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted);
+  margin-top: 4px;
+}
+
+.regex-hint-code {
+  background: var(--clr-bg-elevated);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* Example / description hints */
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted);
+  margin-top: 4px;
+}
+
+/* Regex tester box */
+.regex-tester-box {
+  background: var(--clr-bg-elevated);
+  padding: 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--clr-border);
+}
+
+.regex-tester-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--clr-text-muted);
+  margin-bottom: 6px;
+}
+
+.regex-tester-result {
+  font-size: 0.8rem;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.regex-tester-result--pass { color: var(--clr-success); }
+.regex-tester-result--fail { color: var(--clr-danger); }
+.regex-tester-result--warn { color: var(--clr-warning); }
+
+/* Active toggle checkbox row */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-input { width: 18px; height: 18px; cursor: pointer; }
+.checkbox-label { cursor: pointer; font-size: 0.9rem; }
+
+/* Form action buttons */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: var(--sp-sm);
+}
+
+/* Required asterisk */
+.required-star { color: var(--clr-danger); }
+
+/* Optional label */
+.optional-label { color: var(--clr-text-muted); font-weight: 400; }
+
+/* ─── Admin Login ────────────────────────────────────────────────────────── */
+.admin-login-card { max-width: 420px; }
+
+/* ─── Content Moderation ─────────────────────────────────────────────────── */
+.moderation-tabs {
+  display: flex;
+  gap: var(--sp-md);
+  margin-bottom: var(--sp-md);
+  border-bottom: 1px solid var(--clr-border);
+  padding-bottom: var(--sp-sm);
+}
+
+.reported-card {
+  border: 1px solid var(--clr-danger) !important;
+}
+
+.reported-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.reported-card-title {
+  margin: 0 0 8px 0;
+  color: var(--clr-text);
+}
+
+.reported-card-sub {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.reported-info {
+  margin: 8px 0;
+}
+
+.reported-count {
+  margin: 8px 0;
+  color: var(--clr-danger);
+}
+
+.reported-event-meta {
+  display: flex;
+  gap: var(--sp-md);
+  font-size: 0.875rem;
+  color: var(--clr-text-muted);
+  margin-bottom: var(--sp-md);
+}
+
+.reported-date {
+  margin-top: var(--sp-sm);
+  font-size: 0.875rem;
+  color: var(--clr-text-muted);
+}
+
+.reported-card-footer {
+  margin-top: var(--sp-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ─── Verification Queue ─────────────────────────────────────────────────── */
+.verification-list {
+  display: grid;
+  gap: var(--sp-md);
+}
+
+.verification-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.verification-empty {
+  text-align: center;
+  padding: var(--sp-xl);
+}
+
+.verification-empty-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: var(--sp-sm);
+}
+
+.verification-name { margin: 0; }
+
+.verification-meta {
+  margin: 4px 0;
+}
+
+.verification-id-link {
+  font-size: 0.875rem;
+  color: var(--clr-primary);
+}
+
+.verification-id-link:hover {
+  text-decoration: underline;
+}

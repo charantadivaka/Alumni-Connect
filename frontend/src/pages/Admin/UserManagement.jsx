@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { adminService } from '../../services/adminService';
+import '../../styles/Admin/UserManagement.css';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState(''); // 'student', 'alumni', 'admin'
+  const [filter, setFilter] = useState('');
   const [search, setSearch] = useState('');
 
   const fetchUsers = async () => {
@@ -15,7 +16,6 @@ const UserManagement = () => {
       if (filter) queryParams.push(`role=${filter}`);
       if (search) queryParams.push(`search=${search}`);
       const qs = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
-      
       const data = await adminService.getUsers(qs);
       setUsers(data);
     } catch (err) {
@@ -42,18 +42,18 @@ const UserManagement = () => {
     <div className="dashboard-layout">
       <Sidebar />
       <main className="dashboard-main fade-in">
-        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div className="page-header-row">
           <div>
             <h1>User Management</h1>
             <p>Manage all students, alumni, and admins on the platform</p>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input 
-              type="text" 
-              placeholder="Search by name or email..." 
-              className="form-input" 
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
+          <div className="page-header-controls">
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              className="form-input"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
             />
             <select className="form-input" value={filter} onChange={e => setFilter(e.target.value)}>
               <option value="">All Roles</option>
@@ -65,34 +65,34 @@ const UserManagement = () => {
         </div>
 
         {loading ? (
-          <div style={{ padding: 'var(--sp-xl)', textAlign: 'center' }}><span className="spinner" /> Loading...</div>
+          <div className="loading-state"><span className="spinner" /> Loading...</div>
         ) : (
-          <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
-              <thead style={{ background: 'var(--clr-bg-elevated)', borderBottom: '1px solid var(--clr-border)' }}>
+          <div className="card table-wrapper">
+            <table className="data-table data-table--min-800">
+              <thead className="table-head">
                 <tr>
-                  <th style={{ padding: '12px 16px', fontWeight: 600 }}>Name</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600 }}>Email</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600 }}>Role</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600 }}>Status</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600 }}>Actions</th>
+                  <th className="table-cell table-cell--header">Name</th>
+                  <th className="table-cell table-cell--header">Email</th>
+                  <th className="table-cell table-cell--header">Role</th>
+                  <th className="table-cell table-cell--header">Status</th>
+                  <th className="table-cell table-cell--header">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(user => (
-                  <tr key={user._id} style={{ borderBottom: '1px solid var(--clr-border)' }}>
-                    <td style={{ padding: '12px 16px' }}>{user.name}</td>
-                    <td style={{ padding: '12px 16px' }}>{user.email}</td>
-                    <td style={{ padding: '12px 16px', textTransform: 'capitalize' }}>{user.role}</td>
-                    <td style={{ padding: '12px 16px' }}>
+                  <tr key={user._id} className="table-row">
+                    <td className="table-cell">{user.name}</td>
+                    <td className="table-cell">{user.email}</td>
+                    <td className="table-cell table-cell--role">{user.role}</td>
+                    <td className="table-cell">
                       <span className={`badge ${user.isSuspended ? 'badge-danger' : 'badge-success'}`}>
                         {user.isSuspended ? 'Suspended' : 'Active'}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td className="table-cell">
                       {user.role !== 'admin' && (
-                        <button 
-                          className="btn btn-sm btn-ghost" 
+                        <button
+                          className="btn btn-sm btn-ghost"
                           style={{ color: user.isSuspended ? 'var(--clr-success)' : 'var(--clr-danger)' }}
                           onClick={() => handleSuspend(user._id)}
                         >
@@ -105,9 +105,7 @@ const UserManagement = () => {
               </tbody>
             </table>
             {users.length === 0 && (
-              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--clr-text-muted)' }}>
-                No users found.
-              </div>
+              <div className="table-empty">No users found.</div>
             )}
           </div>
         )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { interviewService } from '../../services/mentorshipService';
+import '../../styles/Student/MockInterviews.css';
 
 const BADGE = {
   Pending:   'badge-primary',

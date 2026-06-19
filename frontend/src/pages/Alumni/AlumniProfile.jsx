@@ -3,6 +3,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { profileService } from '../../services/profileService';
 import { collegeService } from '../../services/collegeService';
+import '../../styles/Alumni/AlumniProfile.css';
 
 const INDUSTRIES = ['Technology','Finance','Healthcare','Education','Consulting','E-commerce','Media','Manufacturing','Other'];
 

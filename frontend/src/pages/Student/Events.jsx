@@ -3,6 +3,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { eventService } from '../../services/eventService';
 import { bookmarkService } from '../../services/otherServices';
+import '../../styles/Student/Events.css';
 
 const StudentEvents = () => {
   const { user } = useAuth();

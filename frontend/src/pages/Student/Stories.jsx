@@ -3,6 +3,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { storyService } from '../../services/eventService';
 import { bookmarkService } from '../../services/otherServices';
+import '../../styles/Student/Stories.css';
 
 const StudentStories = () => {
   const { user } = useAuth();

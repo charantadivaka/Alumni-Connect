@@ -3,6 +3,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { messageService } from '../../services/messageService';
 import { connectionService } from '../../services/otherServices';
+import '../../styles/Student/Messages.css';
 
 const Messages = () => {
   const { user } = useAuth();

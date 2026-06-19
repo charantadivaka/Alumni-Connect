@@ -3,6 +3,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { connectionService } from '../../services/otherServices';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
+import '../../styles/Student/MyCircle.css';
 
 /* ── Reusable PersonCard ─────────────────────────────────────────────── */
 const PersonCard = ({ person, connectionId, onRemove, role }) => {

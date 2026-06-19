@@ -1,0 +1,236 @@
+/* ─── Sidebar Layout ────────────────────────────────────────────────────── */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  background: var(--clr-bg-card);
+  border-right: 1px solid var(--clr-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Sidebar Header ─────────────────────────────────────────────────────── */
+.sidebar-header {
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--clr-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  flex-shrink: 0;
+}
+
+/* ─── Hamburger Button ───────────────────────────────────────────────────── */
+.hamburger-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+  transition: background var(--tr-fast);
+}
+
+.hamburger-btn:hover {
+  background: var(--clr-bg-elevated);
+}
+
+.hamburger-line {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--clr-text-muted);
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+
+/* ─── Sidebar Logo ───────────────────────────────────────────────────────── */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.sidebar-logo-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.sidebar-logo-text {
+  font-weight: 800;
+  font-size: 0.95rem;
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+}
+
+/* ─── User Pill ──────────────────────────────────────────────────────────── */
+.sidebar-user-pill-link {
+  text-decoration: none;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.sidebar-user-pill {
+  margin: 10px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--r-md);
+  transition: background var(--tr-base);
+}
+
+.sidebar-user-pill:hover {
+  background: var(--clr-bg-elevated);
+}
+
+.sidebar-user-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 0.7rem;
+  color: var(--clr-text-faint);
+  text-transform: capitalize;
+}
+
+/* ─── Collapsed Avatar Link ──────────────────────────────────────────────── */
+.sidebar-avatar-link {
+  text-decoration: none;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+  flex-shrink: 0;
+}
+
+/* ─── Nav Section ────────────────────────────────────────────────────────── */
+.sidebar-nav {
+  flex: 1;
+  padding: 8px 6px;
+  overflow-y: auto;
+}
+
+/* ─── Nav Link (shared base) ─────────────────────────────────────────────── */
+.sidebar-nav-link {
+  display: flex;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: var(--r-md);
+  margin-bottom: 2px;
+  font-size: 0.875rem;
+  color: var(--clr-text-muted);
+  background: transparent;
+  font-weight: 400;
+  text-decoration: none;
+  transition: all var(--tr-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+}
+
+.sidebar-nav-link:hover {
+  background: var(--clr-bg-elevated);
+  color: var(--clr-text);
+}
+
+.sidebar-nav-link--active {
+  color: var(--clr-text);
+  background: var(--clr-primary-glow);
+  font-weight: 600;
+}
+
+/* Open sidebar: space-between alignment */
+.sidebar-nav-link--open {
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+/* Collapsed sidebar: centered icon */
+.sidebar-nav-link--collapsed {
+  gap: 0;
+  justify-content: center;
+}
+
+.sidebar-nav-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.sidebar-nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Unread Badge ───────────────────────────────────────────────────────── */
+.sidebar-unread-badge {
+  margin-left: auto;
+  padding: 1px 7px;
+  font-size: 0.7rem;
+}
+
+.sidebar-unread-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--clr-primary);
+}
+
+/* ─── Logout Button ──────────────────────────────────────────────────────── */
+.sidebar-footer {
+  padding: 10px 6px;
+  border-top: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: var(--r-md);
+  background: none;
+  border: none;
+  color: var(--clr-text-muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--tr-fast);
+}
+
+.sidebar-logout:hover {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--clr-danger);
+}
+
+.sidebar-logout--open {
+  justify-content: flex-start;
+}
+
+.sidebar-logout--collapsed {
+  justify-content: center;
+}
+
+.sidebar-logout-icon {
+  font-size: 1.1rem;
+}

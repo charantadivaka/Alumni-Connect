@@ -1,0 +1,371 @@
+/* ─── Dashboard Shared (Alumni + Student) ───────────────────────────────── */
+
+/* Dashboard content stack */
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xl);
+}
+
+/* Stat number inside a centered card */
+.dash-stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.dash-stat-number--primary { color: var(--clr-primary); }
+.dash-stat-number--success { color: var(--clr-success); }
+.dash-stat-number--warning { color: var(--clr-warning); }
+.dash-stat-number--danger  { color: var(--clr-danger); }
+
+.dash-stat-label {
+  margin: 0;
+}
+
+.dash-card-center { text-align: center; }
+
+/* Section title (smaller than h2) */
+.section-title {
+  font-size: 1.1rem;
+  margin-bottom: var(--sp-md);
+}
+
+/* Card grid for sessions, jobs etc */
+.card-grid {
+  display: grid;
+  gap: var(--sp-md);
+}
+
+/* Compact card (less padding) */
+.card-compact { padding: var(--sp-md); }
+
+/* Card row: space-between two elements */
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.card-row--center {
+  align-items: center;
+}
+
+/* Card title (smaller h3 inside a card) */
+.card-item-title {
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+
+.card-item-sub {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+}
+
+.card-item-sub--sm {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Badge row */
+.badge-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge-row .badge {
+  font-size: 0.7rem;
+}
+
+/* User pill in connection request */
+.conn-user-pill {
+  display: flex;
+  gap: var(--sp-md);
+  align-items: center;
+}
+
+.conn-user-info {
+  flex: 1;
+}
+
+.conn-user-name {
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+
+.conn-user-role {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.conn-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Empty state inside section */
+.section-empty {
+  text-align: center;
+  padding: 24px;
+}
+
+/* Grid section two-col */
+.dashboard-two-col {
+  gap: var(--sp-xl);
+}
+
+/* ─── Community Hub (Alumni + Student) ──────────────────────────────────── */
+.hub-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.hub-body {
+  margin-left: var(--sidebar-w);
+  display: flex;
+  flex: 1;
+  min-height: 100vh;
+  transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Inner sub-navigation sidebar */
+.hub-inner-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--clr-bg-card);
+  border-right: 1px solid var(--clr-border);
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 100%;
+}
+
+.hub-inner-sidebar-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--clr-text-faint);
+  padding: 0 10px;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.hub-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  font-size: 0.875rem;
+  transition: all var(--tr-fast);
+  color: var(--clr-text-muted);
+  background: transparent;
+  font-weight: 400;
+}
+
+.hub-nav-btn--active {
+  background: var(--clr-primary-glow);
+  color: var(--clr-text);
+  font-weight: 600;
+}
+
+.hub-nav-btn:not(.hub-nav-btn--active):hover {
+  background: var(--clr-bg-elevated);
+  color: var(--clr-text);
+}
+
+.hub-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* ─── Jobs Hub (Alumni + Student) ──────────────────────────────────────── */
+.jobs-hub-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.jobs-hub-body {
+  margin-left: var(--sidebar-w);
+  display: flex;
+  flex: 1;
+  min-height: 100vh;
+  transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.jobs-hub-inner-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--clr-bg-card);
+  border-right: 1px solid var(--clr-border);
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 100%;
+}
+
+.jobs-hub-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* ─── Student Dashboard specific ─────────────────────────────────────────── */
+
+/* Loading state (also used in admin) */
+.loading-state {
+  padding: var(--sp-xl);
+  text-align: center;
+}
+
+/* Auto-fit grid for student dashboard */
+.student-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  gap: 22px;
+}
+
+/* Section card */
+.section-card {
+  background: var(--clr-bg-card);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.section-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.section-card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-card-icon {
+  font-size: 1.15rem;
+}
+
+.section-card-link {
+  font-size: 0.8rem;
+  color: var(--clr-primary);
+  font-weight: 600;
+}
+
+.section-card-link:hover {
+  text-decoration: underline;
+}
+
+.section-card-body {
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Item row inside section card */
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  background: var(--clr-bg-elevated);
+  border: 1px solid var(--clr-border);
+  justify-content: space-between;
+}
+
+.item-row-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.item-row-primary {
+  font-weight: 600;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-row-secondary {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted);
+  margin-top: 2px;
+}
+
+.item-row-badge {
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+
+/* Empty section message */
+.section-empty-msg {
+  font-size: 0.85rem;
+  margin: 4px 0;
+}
+
+/* Connection item in student dashboard */
+.conn-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  background: var(--clr-bg-elevated);
+  border: 1px solid var(--clr-border);
+}
+
+.conn-item-avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.conn-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.conn-item-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conn-item-role {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted);
+  text-transform: capitalize;
+}
+
+.conn-item-badge {
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+
+/* ─── card-item-sub-sm ─ alias for backwards compat ─────────────────────── */
+.card-item-sub-sm {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+  color: var(--clr-text-muted);
+}
+

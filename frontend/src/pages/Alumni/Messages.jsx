@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { messageService } from '../../services/messageService';
+import '../../styles/Alumni/Messages.css';
 
 const Messages = () => {
   const { user } = useAuth();

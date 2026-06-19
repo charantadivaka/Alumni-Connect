@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { eventService } from '../../services/eventService';
+import '../../styles/Alumni/Events.css';
 
 const CATEGORIES = ['Webinar', 'Career Fair', 'Networking', 'Workshop', 'Other'];
 

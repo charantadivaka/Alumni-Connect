@@ -4,6 +4,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { profileService } from '../../services/profileService';
 import { connectionService } from '../../services/otherServices';
 import { useAuth } from '../../context/AuthContext';
+import '../../styles/Student/AlumniProfile.css';
 
 const AlumniProfile = () => {
   const { id } = useParams();

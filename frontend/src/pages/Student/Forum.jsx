@@ -3,6 +3,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { forumService } from '../../services/eventService';
 import { bookmarkService } from '../../services/otherServices';
+import '../../styles/Student/Forum.css';
 
 const CATEGORIES = ['General', 'Career', 'Technical', 'Campus Life', 'Opportunities', 'Other'];
 

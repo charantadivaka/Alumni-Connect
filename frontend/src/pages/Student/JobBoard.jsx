@@ -3,6 +3,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { jobService, applicationService } from '../../services/jobService';
 import { bookmarkService } from '../../services/otherServices';
 import { useAuth } from '../../context/AuthContext';
+import '../../styles/Student/JobBoard.css';
 
 const JobBoard = () => {
   const { user } = useAuth();

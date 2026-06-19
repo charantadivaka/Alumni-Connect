@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { storyService } from '../../services/eventService';
+import '../../styles/Alumni/Stories.css';
 
 const AlumniStories = () => {
   const { user } = useAuth();

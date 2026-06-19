@@ -4,6 +4,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { matchService } from '../../services/matchService';
 import { connectionService } from '../../services/otherServices';
 import { useAuth } from '../../context/AuthContext';
+import '../../styles/Student/BrowseAlumni.css';
 
 const INDUSTRIES = ['', 'Technology', 'Finance', 'Healthcare', 'Education', 'Consulting', 'E-commerce'];
 

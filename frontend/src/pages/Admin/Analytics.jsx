@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { adminService } from '../../services/adminService';
+import '../../styles/Admin/Analytics.css';
 
 const Analytics = () => {
   const [stats, setStats] = useState(null);
@@ -30,64 +31,56 @@ const Analytics = () => {
         </div>
 
         {loading ? (
-          <div style={{ padding: 'var(--sp-xl)', textAlign: 'center' }}><span className="spinner" /> Loading...</div>
+          <div className="loading-state"><span className="spinner" /> Loading...</div>
         ) : stats ? (
           <>
-            <h3 style={{ marginBottom: 'var(--sp-md)' }}>Engagement & Networking</h3>
-            <div className="grid-3" style={{ gap: 'var(--sp-md)', marginBottom: 'var(--sp-lg)' }}>
-              <div className="card" style={{ textAlign: 'center', borderTop: '4px solid var(--clr-primary)' }}>
-                <div style={{ fontSize: '2rem' }}>🤝</div>
-                <h2 style={{ margin: '8px 0 0' }}>{stats.totalMentorships}</h2>
-                <p className="text-muted">Mentorships Initiated</p>
-              </div>
-              <div className="card" style={{ textAlign: 'center', borderTop: '4px solid var(--clr-primary)' }}>
-                <div style={{ fontSize: '2rem' }}>🎙️</div>
-                <h2 style={{ margin: '8px 0 0' }}>{stats.totalMockInterviews || 0}</h2>
-                <p className="text-muted">Mock Interviews Scheduled</p>
-              </div>
-              <div className="card" style={{ textAlign: 'center', borderTop: '4px solid var(--clr-primary)' }}>
-                <div style={{ fontSize: '2rem' }}>💬</div>
-                <h2 style={{ margin: '8px 0 0' }}>{stats.totalForums}</h2>
-                <p className="text-muted">Forum Discussions</p>
-              </div>
-            </div>
-
-            <h3 style={{ marginBottom: 'var(--sp-md)' }}>Career & Opportunities</h3>
-            <div className="grid-3" style={{ gap: 'var(--sp-md)', marginBottom: 'var(--sp-lg)' }}>
-              <div className="card" style={{ textAlign: 'center', borderTop: '4px solid var(--clr-success)' }}>
-                <div style={{ fontSize: '2rem' }}>💼</div>
-                <h2 style={{ margin: '8px 0 0' }}>{stats.totalJobs}</h2>
-                <p className="text-muted">Active Job Postings</p>
-              </div>
-              <div className="card" style={{ textAlign: 'center', borderTop: '4px solid var(--clr-success)' }}>
-                <div style={{ fontSize: '2rem' }}>📄</div>
-                <h2 style={{ margin: '8px 0 0' }}>{stats.totalJobApplications || 0}</h2>
-                <p className="text-muted">Applications Submitted</p>
-              </div>
-              <div className="card" style={{ textAlign: 'center', borderTop: '4px solid var(--clr-success)' }}>
-                <div style={{ fontSize: '2rem' }}>🏆</div>
-                <h2 style={{ margin: '8px 0 0' }}>{stats.totalStories}</h2>
-                <p className="text-muted">Success Stories Published</p>
-              </div>
-            </div>
-
-            <h3 style={{ marginBottom: 'var(--sp-md)' }}>Growth Metrics</h3>
-            <div className="grid-2" style={{ gap: 'var(--sp-md)' }}>
-              <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h4 style={{ margin: 0, color: 'var(--clr-text-muted)' }}>Recent User Registrations (Last 7 Days)</h4>
-                  <h2 style={{ margin: '8px 0 0', color: 'var(--clr-primary)' }}>+{stats.recentRegistrations || 0}</h2>
+            <h3 className="analytics-section-title">Engagement &amp; Networking</h3>
+            <div className="grid-3 analytics-grid">
+              {[
+                { emoji: '🤝', value: stats.totalMentorships,         label: 'Mentorships Initiated' },
+                { emoji: '🎙️', value: stats.totalMockInterviews || 0, label: 'Mock Interviews Scheduled' },
+                { emoji: '💬', value: stats.totalForums,              label: 'Forum Discussions' },
+              ].map(({ emoji, value, label }) => (
+                <div key={label} className="card analytics-card-primary">
+                  <div className="analytics-card-emoji">{emoji}</div>
+                  <h2 className="analytics-card-stat">{value}</h2>
+                  <p className="text-muted">{label}</p>
                 </div>
-                <div style={{ fontSize: '2.5rem' }}>📈</div>
-              </div>
-              <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              ))}
+            </div>
+
+            <h3 className="analytics-section-title">Career &amp; Opportunities</h3>
+            <div className="grid-3 analytics-grid">
+              {[
+                { emoji: '💼', value: stats.totalJobs,                  label: 'Active Job Postings' },
+                { emoji: '📄', value: stats.totalJobApplications || 0,  label: 'Applications Submitted' },
+                { emoji: '🏆', value: stats.totalStories,               label: 'Success Stories Published' },
+              ].map(({ emoji, value, label }) => (
+                <div key={label} className="card analytics-card-success">
+                  <div className="analytics-card-emoji">{emoji}</div>
+                  <h2 className="analytics-card-stat">{value}</h2>
+                  <p className="text-muted">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            <h3 className="analytics-section-title">Growth Metrics</h3>
+            <div className="grid-2">
+              <div className="card analytics-growth-card">
                 <div>
-                  <h4 style={{ margin: 0, color: 'var(--clr-text-muted)' }}>Pending Alumni Verifications</h4>
-                  <h2 style={{ margin: '8px 0 0', color: stats.pendingVerifications > 0 ? 'var(--clr-danger)' : 'var(--clr-text)' }}>
+                  <h4 className="analytics-growth-label">Recent User Registrations (Last 7 Days)</h4>
+                  <h2 className="analytics-growth-value">+{stats.recentRegistrations || 0}</h2>
+                </div>
+                <div className="analytics-growth-icon">📈</div>
+              </div>
+              <div className="card analytics-growth-card">
+                <div>
+                  <h4 className="analytics-growth-label">Pending Alumni Verifications</h4>
+                  <h2 className="analytics-card-stat" style={{ color: stats.pendingVerifications > 0 ? 'var(--clr-danger)' : 'var(--clr-text)' }}>
                     {stats.pendingVerifications}
                   </h2>
                 </div>
-                <div style={{ fontSize: '2.5rem' }}>⏳</div>
+                <div className="analytics-growth-icon">⏳</div>
               </div>
             </div>
           </>
@@ -100,4 +93,3 @@ const Analytics = () => {
 };
 
 export default Analytics;
-

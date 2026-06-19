@@ -3,6 +3,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { profileService } from '../../services/profileService';
 import { collegeService } from '../../services/collegeService';
+import '../../styles/Student/StudentProfile.css';
 
 const StudentProfile = () => {
   const { user } = useAuth();

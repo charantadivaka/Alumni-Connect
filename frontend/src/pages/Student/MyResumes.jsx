@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { resumeService } from '../../services/otherServices';
+import '../../styles/Student/MyResumes.css';
 
 const MyResumes = () => {
   const [resumes, setResumes] = useState([]);

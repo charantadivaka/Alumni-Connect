@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { mentorshipService } from '../../services/mentorshipService';
+import '../../styles/Student/MentorshipSessions.css';
 
 const STAGE_COLORS = {
   Pending:   'badge-primary',

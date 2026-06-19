@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { slotService } from '../../services/mentorshipService';
+import '../../styles/Alumni/ManageSlots.css';
 
 const ManageSlots = () => {
   const [slots, setSlots] = useState([]);

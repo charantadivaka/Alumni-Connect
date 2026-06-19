@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { adminService } from '../../services/adminService';
-import { api } from '../../services/api';
+import '../../styles/Admin/Dashboard.css';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -31,56 +31,26 @@ const Dashboard = () => {
         </div>
 
         {loading ? (
-          <div style={{ padding: 'var(--sp-xl)', textAlign: 'center' }}><span className="spinner" /> Loading...</div>
+          <div className="loading-state"><span className="spinner" /> Loading...</div>
         ) : stats ? (
-          <div className="grid-3" style={{ gap: 'var(--sp-md)' }}>
-            <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem' }}>👥</div>
-              <h3 style={{ margin: '8px 0 0' }}>{stats.totalUsers}</h3>
-              <p className="text-muted">Total Users</p>
-            </div>
-            <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem' }}>👨‍🎓</div>
-              <h3 style={{ margin: '8px 0 0' }}>{stats.totalStudents}</h3>
-              <p className="text-muted">Students</p>
-            </div>
-            <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem' }}>🎓</div>
-              <h3 style={{ margin: '8px 0 0' }}>{stats.totalAlumni}</h3>
-              <p className="text-muted">Alumni</p>
-            </div>
-            <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem' }}>🤝</div>
-              <h3 style={{ margin: '8px 0 0' }}>{stats.totalMentorships}</h3>
-              <p className="text-muted">Mentorship Sessions</p>
-            </div>
-            <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem' }}>🎙️</div>
-              <h3 style={{ margin: '8px 0 0' }}>{stats.totalMockInterviews}</h3>
-              <p className="text-muted">Mock Interviews</p>
-            </div>
-            <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem' }}>💼</div>
-              <h3 style={{ margin: '8px 0 0' }}>{stats.totalJobs}</h3>
-              <p className="text-muted">Active Jobs</p>
-            </div>
-            <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem' }}>📄</div>
-              <h3 style={{ margin: '8px 0 0' }}>{stats.totalJobApplications}</h3>
-              <p className="text-muted">Job Applications</p>
-            </div>
-            <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem' }}>📅</div>
-              <h3 style={{ margin: '8px 0 0' }}>{stats.totalEvents}</h3>
-              <p className="text-muted">Events Hosted</p>
-            </div>
-            <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem' }}>✅</div>
-              <h3 style={{ margin: '8px 0 0', color: stats.pendingVerifications > 0 ? 'var(--clr-danger)' : 'var(--clr-text)' }}>
-                {stats.pendingVerifications}
-              </h3>
-              <p className="text-muted">Pending Verifications</p>
-            </div>
+          <div className="grid-3">
+            {[
+              { emoji: '👥', value: stats.totalUsers,           label: 'Total Users' },
+              { emoji: '👨‍🎓', value: stats.totalStudents,       label: 'Students' },
+              { emoji: '🎓', value: stats.totalAlumni,          label: 'Alumni' },
+              { emoji: '🤝', value: stats.totalMentorships,     label: 'Mentorship Sessions' },
+              { emoji: '🎙️', value: stats.totalMockInterviews,  label: 'Mock Interviews' },
+              { emoji: '💼', value: stats.totalJobs,            label: 'Active Jobs' },
+              { emoji: '📄', value: stats.totalJobApplications, label: 'Job Applications' },
+              { emoji: '📅', value: stats.totalEvents,          label: 'Events Hosted' },
+              { emoji: '✅', value: stats.pendingVerifications, label: 'Pending Verifications', danger: stats.pendingVerifications > 0 },
+            ].map(({ emoji, value, label, danger }) => (
+              <div key={label} className="card admin-stat-card">
+                <div className="stat-card-emoji">{emoji}</div>
+                <h3 className="admin-stat-card-title" style={danger ? { color: 'var(--clr-danger)' } : undefined}>{value}</h3>
+                <p className="text-muted">{label}</p>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="card" style={{ color: 'var(--clr-danger)' }}>Failed to load analytics.</div>

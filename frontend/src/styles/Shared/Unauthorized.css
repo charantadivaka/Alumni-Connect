@@ -1,0 +1,43 @@
+/* ─── Shared Error Pages ─────────────────────────────────────────────────── */
+
+.error-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--sp-lg);
+}
+
+.error-page-icon {
+  font-size: 4rem;
+  margin-bottom: var(--sp-lg);
+}
+
+.error-page-icon--xl {
+  font-size: 5rem;
+}
+
+.error-page-404 {
+  font-size: 4rem;
+  font-weight: 900;
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.error-page-title {
+  margin: var(--sp-md) 0 var(--sp-sm);
+}
+
+.error-page-cta {
+  margin-top: var(--sp-xl);
+}
+
+.error-page-actions {
+  display: flex;
+  gap: var(--sp-md);
+  margin-top: var(--sp-xl);
+}

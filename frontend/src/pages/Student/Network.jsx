@@ -5,6 +5,7 @@ import { matchService } from '../../services/matchService';
 import { connectionService } from '../../services/otherServices';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import '../../styles/Student/Network.css';
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 const INDUSTRIES = ['', 'Technology', 'Finance', 'Healthcare', 'Education', 'Consulting', 'E-commerce'];

@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { jobService, applicationService } from '../../services/jobService';
 import { mentorshipService, interviewService } from '../../services/mentorshipService';
 import { connectionService } from '../../services/otherServices';
+import '../../styles/Alumni/Dashboard.css';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -24,9 +25,9 @@ const Dashboard = () => {
         applicationService.getAlumni(),
         connectionService.getMy()
       ]);
-      
+
       if (jobsData.status === 'fulfilled') setJobs(jobsData.value.slice(0, 4));
-      
+
       if (sessionsData.status === 'fulfilled') {
         const allSessions = sessionsData.value;
         setSessions(allSessions.filter(s => s.status === 'Pending').slice(0, 3));
@@ -49,14 +50,12 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  useEffect(() => { fetchDashboardData(); }, []);
 
   const handleConnectionRespond = async (id, status) => {
     try {
       await connectionService.respond(id, { status });
-      fetchDashboardData(); // Reload data
+      fetchDashboardData();
     } catch (err) {
       alert(err.response?.data?.message || err.message);
     }
@@ -74,44 +73,44 @@ const Dashboard = () => {
         </div>
 
         {loading ? (
-          <div style={{ padding: 'var(--sp-xl)', textAlign: 'center' }}><span className="spinner" /> Loading...</div>
+          <div className="loading-state"><span className="spinner" /> Loading...</div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-xl)' }}>
-            
+          <div className="dashboard-content">
+
             {/* Stats Row */}
-            <div className="grid-3" style={{ gap: 'var(--sp-md)' }}>
-              <div className="card" style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '2rem', fontWeight: 700, margin: '0 0 4px', color: 'var(--clr-primary)' }}>{connectionReqs.length}</p>
-                <p className="text-muted" style={{ margin: 0 }}>Connection Requests</p>
+            <div className="grid-3">
+              <div className="card dash-card-center">
+                <p className="dash-stat-number dash-stat-number--primary">{connectionReqs.length}</p>
+                <p className="text-muted dash-stat-label">Connection Requests</p>
               </div>
-              <div className="card" style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '2rem', fontWeight: 700, margin: '0 0 4px', color: 'var(--clr-success)' }}>{applications.length}</p>
-                <p className="text-muted" style={{ margin: 0 }}>Applications Received</p>
+              <div className="card dash-card-center">
+                <p className="dash-stat-number dash-stat-number--success">{applications.length}</p>
+                <p className="text-muted dash-stat-label">Applications Received</p>
               </div>
-              <div className="card" style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '2rem', fontWeight: 700, margin: '0 0 4px', color: 'var(--clr-warning, #f59e0b)' }}>{sessions.length}</p>
-                <p className="text-muted" style={{ margin: 0 }}>Pending Mentorship Requests</p>
+              <div className="card dash-card-center">
+                <p className="dash-stat-number dash-stat-number--warning">{sessions.length}</p>
+                <p className="text-muted dash-stat-label">Pending Mentorship Requests</p>
               </div>
             </div>
 
             {/* Pending Connections */}
             {connectionReqs.length > 0 && (
               <div>
-                <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--sp-md)' }}>Pending Connection Requests</h2>
-                <div className="grid-2" style={{ gap: 'var(--sp-md)' }}>
+                <h2 className="section-title">Pending Connection Requests</h2>
+                <div className="grid-2">
                   {connectionReqs.map(c => (
-                    <div key={c._id} className="card" style={{ padding: 'var(--sp-md)' }}>
-                      <div style={{ display: 'flex', gap: 'var(--sp-md)', alignItems: 'center' }}>
+                    <div key={c._id} className="card card-compact">
+                      <div className="conn-user-pill">
                         <div className="avatar-placeholder avatar-md" style={{ width: 40, height: 40 }}>
-                          {c.sender?.profilePicture 
-                            ? <img src={c.sender.profilePicture} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} /> 
+                          {c.sender?.profilePicture
+                            ? <img src={c.sender.profilePicture} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} alt={c.sender.name} />
                             : c.sender?.name?.[0]?.toUpperCase()}
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <h3 style={{ margin: '0 0 2px', fontSize: '1rem' }}>{c.sender?.name}</h3>
-                          <p className="text-muted" style={{ margin: 0, fontSize: '0.8rem' }}>{c.sender?.role}</p>
+                        <div className="conn-user-info">
+                          <h3 className="conn-user-name">{c.sender?.name}</h3>
+                          <p className="text-muted conn-user-role">{c.sender?.role}</p>
                         </div>
-                        <div style={{ display: 'flex', gap: 8 }}>
+                        <div className="conn-actions">
                           <button className="btn btn-success btn-sm" onClick={() => handleConnectionRespond(c._id, 'Accepted')}>Accept</button>
                           <button className="btn btn-outline btn-sm" onClick={() => handleConnectionRespond(c._id, 'Rejected')}>Reject</button>
                         </div>
@@ -123,16 +122,14 @@ const Dashboard = () => {
             )}
 
             {/* Active Sessions Row */}
-            <div className="grid-2" style={{ gap: 'var(--sp-xl)' }}>
+            <div className="grid-2 dashboard-two-col">
               <div>
-                <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--sp-md)' }}>Active Mentorships</h2>
-                <div style={{ display: 'grid', gap: 'var(--sp-md)' }}>
+                <h2 className="section-title">Active Mentorships</h2>
+                <div className="card-grid">
                   {activeMentorships.length === 0 ? <p className="text-muted">No active mentorships.</p> : activeMentorships.map(m => (
-                    <div key={m._id} className="card" style={{ padding: 'var(--sp-md)' }}>
-                      <h3 style={{ margin: '0 0 4px 0', fontSize: '1rem' }}>{m.topic}</h3>
-                      <p className="text-muted" style={{ margin: '0 0 8px 0', fontSize: '0.875rem' }}>
-                        Student: {m.student?.name}
-                      </p>
+                    <div key={m._id} className="card card-compact">
+                      <h3 className="card-item-title">{m.topic}</h3>
+                      <p className="text-muted card-item-sub-sm">Student: {m.student?.name}</p>
                       {m.slot && (
                         <span className="badge badge-success">
                           📅 {new Date(m.slot.date).toLocaleDateString()} at {m.slot.startTime}
@@ -144,14 +141,12 @@ const Dashboard = () => {
               </div>
 
               <div>
-                <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--sp-md)' }}>Active Interviews</h2>
-                <div style={{ display: 'grid', gap: 'var(--sp-md)' }}>
+                <h2 className="section-title">Active Interviews</h2>
+                <div className="card-grid">
                   {activeInterviews.length === 0 ? <p className="text-muted">No active mock interviews.</p> : activeInterviews.map(i => (
-                    <div key={i._id} className="card" style={{ padding: 'var(--sp-md)' }}>
-                      <h3 style={{ margin: '0 0 4px 0', fontSize: '1rem' }}>{i.targetRole} ({i.interviewType})</h3>
-                      <p className="text-muted" style={{ margin: '0 0 8px 0', fontSize: '0.875rem' }}>
-                        Student: {i.student?.name}
-                      </p>
+                    <div key={i._id} className="card card-compact">
+                      <h3 className="card-item-title">{i.targetRole} ({i.interviewType})</h3>
+                      <p className="text-muted card-item-sub-sm">Student: {i.student?.name}</p>
                       {i.slot && (
                         <span className="badge badge-primary">
                           📅 {new Date(i.slot.date).toLocaleDateString()} at {i.slot.startTime}
@@ -163,29 +158,29 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="grid-2" style={{ gap: 'var(--sp-xl)' }}>
+            <div className="grid-2 dashboard-two-col">
               {/* Recent Jobs */}
               <div>
-                <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--sp-md)' }}>Your Recent Job Posts</h2>
-                <div style={{ display: 'grid', gap: 'var(--sp-md)' }}>
+                <h2 className="section-title">Your Recent Job Posts</h2>
+                <div className="card-grid">
                   {jobs.length === 0 ? (
-                    <div className="card" style={{ textAlign: 'center', padding: 24 }}>
+                    <div className="card section-empty">
                       <p className="text-muted">No jobs posted yet. Go to Manage Jobs to create one.</p>
                     </div>
                   ) : jobs.map(job => (
-                    <div key={job._id} className="card" style={{ padding: 'var(--sp-md)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div key={job._id} className="card card-compact">
+                      <div className="card-row">
                         <div>
-                          <h3 style={{ margin: '0 0 2px', fontSize: '1rem' }}>{job.title}</h3>
-                          <p className="text-muted" style={{ margin: '0 0 6px', fontSize: '0.8rem' }}>{job.company} • {job.location}</p>
+                          <h3 className="card-item-title">{job.title}</h3>
+                          <p className="text-muted card-item-sub">{job.company} • {job.location}</p>
                         </div>
                         <span className={`badge ${job.isActive ? 'badge-success' : 'badge-danger'}`}>
                           {job.isActive ? 'Active' : 'Closed'}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <span className="badge badge-ghost" style={{ fontSize: '0.7rem' }}>{job.jobType}</span>
-                        {job.ctc && <span className="badge badge-ghost" style={{ fontSize: '0.7rem' }}>CTC: {job.ctc}</span>}
+                      <div className="badge-row">
+                        <span className="badge badge-ghost">{job.jobType}</span>
+                        {job.ctc && <span className="badge badge-ghost">CTC: {job.ctc}</span>}
                       </div>
                     </div>
                   ))}
@@ -194,22 +189,22 @@ const Dashboard = () => {
 
               {/* Recent Applications */}
               <div>
-                <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--sp-md)' }}>Recent Applications</h2>
-                <div style={{ display: 'grid', gap: 'var(--sp-md)' }}>
+                <h2 className="section-title">Recent Applications</h2>
+                <div className="card-grid">
                   {applications.length === 0 ? (
-                    <div className="card" style={{ textAlign: 'center', padding: 24 }}>
+                    <div className="card section-empty">
                       <p className="text-muted">No applications received yet.</p>
                     </div>
                   ) : applications.map(app => (
-                    <div key={app._id} className="card" style={{ padding: 'var(--sp-md)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div key={app._id} className="card card-compact">
+                      <div className="card-row">
                         <div>
-                          <h3 style={{ margin: '0 0 2px', fontSize: '1rem' }}>{app.name || app.applicant?.name}</h3>
-                          <p className="text-muted" style={{ margin: '0 0 6px', fontSize: '0.8rem' }}>For: {app.job?.title}</p>
+                          <h3 className="card-item-title">{app.name || app.applicant?.name}</h3>
+                          <p className="text-muted card-item-sub">For: {app.job?.title}</p>
                         </div>
                         <span className={`badge ${STAGE_COLOR[app.stage] || 'badge-ghost'}`}>{app.stage}</span>
                       </div>
-                      {app.branch && <p className="text-sm text-faint" style={{ margin: 0 }}>{app.branch} {app.rollNo && `• ${app.rollNo}`}</p>}
+                      {app.branch && <p className="text-sm text-faint">{app.branch} {app.rollNo && `• ${app.rollNo}`}</p>}
                     </div>
                   ))}
                 </div>
@@ -219,14 +214,14 @@ const Dashboard = () => {
             {/* Pending Mentorship */}
             {sessions.length > 0 && (
               <div>
-                <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--sp-md)' }}>Pending Mentorship Requests</h2>
-                <div className="grid-2" style={{ gap: 'var(--sp-md)' }}>
+                <h2 className="section-title">Pending Mentorship Requests</h2>
+                <div className="grid-2">
                   {sessions.map(s => (
-                    <div key={s._id} className="card" style={{ padding: 'var(--sp-md)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div key={s._id} className="card card-compact">
+                      <div className="card-row">
                         <div>
-                          <h3 style={{ margin: '0 0 2px', fontSize: '1rem' }}>{s.student?.name}</h3>
-                          <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>{s.topic}</p>
+                          <h3 className="card-item-title">{s.student?.name}</h3>
+                          <p className="text-muted card-item-sub-sm">{s.topic}</p>
                         </div>
                         <span className="badge badge-primary">Pending</span>
                       </div>

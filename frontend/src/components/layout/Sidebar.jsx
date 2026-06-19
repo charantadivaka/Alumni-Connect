@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useEffect, useState } from 'react';
 import { notificationService } from '../../services/messageService';
+import './Sidebar.css';
 
 /* ── Student top-level nav items ──────────────────────────────────────── */
 const studentLinks = [
@@ -66,65 +67,26 @@ export const Sidebar = ({ defaultOpen = true }) => {
   return (
     <>
       {/* Sidebar */}
-      <aside style={{
-        position: 'fixed', top: 0, left: 0,
-        width: sidebarW, height: '100vh',
-        background: 'var(--clr-bg-card)',
-        borderRight: '1px solid var(--clr-border)',
-        display: 'flex', flexDirection: 'column',
-        zIndex: 100, overflowY: 'auto', overflowX: 'hidden',
-        transition: 'width 0.28s cubic-bezier(.4,0,.2,1)',
-      }}>
+      <aside
+        className="sidebar"
+        style={{ width: sidebarW }}
+      >
         {/* Header: hamburger + logo */}
-        <div style={{
-          padding: '16px 12px',
-          borderBottom: '1px solid var(--clr-border)',
-          display: 'flex', alignItems: 'center', gap: 10,
-          minHeight: 64, flexShrink: 0,
-        }}>
+        <div className="sidebar-header">
           <button
             onClick={toggleSidebar}
             title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', gap: 5,
-              padding: 6, borderRadius: 'var(--r-sm)',
-              flexShrink: 0,
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-bg-elevated)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            className="hamburger-btn"
           >
-            <span style={{
-              display: 'block', width: 20, height: 2,
-              background: 'var(--clr-text-muted)', borderRadius: 2,
-              transition: 'all 0.2s',
-              transform: isOpen ? 'rotate(0)' : 'none',
-            }} />
-            <span style={{
-              display: 'block', width: 20, height: 2,
-              background: 'var(--clr-text-muted)', borderRadius: 2,
-              transition: 'all 0.2s',
-              opacity: isOpen ? 1 : 0.7,
-            }} />
-            <span style={{
-              display: 'block', width: 20, height: 2,
-              background: 'var(--clr-text-muted)', borderRadius: 2,
-              transition: 'all 0.2s',
-            }} />
+            <span className="hamburger-line" />
+            <span className="hamburger-line" style={{ opacity: isOpen ? 1 : 0.7 }} />
+            <span className="hamburger-line" />
           </button>
 
           {isOpen && (
-            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-              <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>🎓</span>
-              <span style={{
-                fontWeight: 800, fontSize: '0.95rem',
-                background: 'var(--grad-primary)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                whiteSpace: 'nowrap',
-              }}>
-                AlumniConnect
-              </span>
+            <Link to="/" className="sidebar-logo">
+              <span className="sidebar-logo-icon">🎓</span>
+              <span className="sidebar-logo-text">AlumniConnect</span>
             </Link>
           )}
         </div>
@@ -133,23 +95,15 @@ export const Sidebar = ({ defaultOpen = true }) => {
         {isOpen && (
           <Link
             to={user?.role === 'admin' ? '/admin/dashboard' : `/${user?.role}/profile`}
-            style={{ textDecoration: 'none', color: 'inherit', flexShrink: 0 }}
+            className="sidebar-user-pill-link"
           >
-            <div
-              style={{
-                margin: '10px 8px', display: 'flex', alignItems: 'center', gap: 8,
-                cursor: 'pointer', padding: '8px', borderRadius: 'var(--r-md)',
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-bg-elevated)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
+            <div className="sidebar-user-pill">
               <div className="avatar-placeholder avatar-sm" style={{ width: 30, height: 30, fontSize: '0.75rem', flexShrink: 0 }}>
                 {user?.name?.[0]?.toUpperCase()}
               </div>
               <div style={{ overflow: 'hidden' }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--clr-text-faint)', textTransform: 'capitalize' }}>{user?.role}</div>
+                <div className="sidebar-user-name">{user?.name}</div>
+                <div className="sidebar-user-role">{user?.role}</div>
               </div>
             </div>
           </Link>
@@ -157,7 +111,10 @@ export const Sidebar = ({ defaultOpen = true }) => {
 
         {/* Collapsed: avatar only */}
         {!isOpen && (
-          <Link to={user?.role === 'admin' ? '/admin/dashboard' : `/${user?.role}/profile`} style={{ textDecoration: 'none', display: 'flex', justifyContent: 'center', padding: '10px 0', flexShrink: 0 }}>
+          <Link
+            to={user?.role === 'admin' ? '/admin/dashboard' : `/${user?.role}/profile`}
+            className="sidebar-avatar-link"
+          >
             <div className="avatar-placeholder avatar-sm" style={{ width: 32, height: 32, fontSize: '0.75rem' }}>
               {user?.name?.[0]?.toUpperCase()}
             </div>
@@ -165,7 +122,7 @@ export const Sidebar = ({ defaultOpen = true }) => {
         )}
 
         {/* Nav links */}
-        <nav style={{ flex: 1, padding: '8px 6px', overflowY: 'auto' }}>
+        <nav className="sidebar-nav">
           {links.map(({ to, icon, label }) => {
             const active = location.pathname === to || location.pathname.startsWith(to + '/');
             return (
@@ -173,32 +130,21 @@ export const Sidebar = ({ defaultOpen = true }) => {
                 key={to}
                 to={to}
                 title={!isOpen ? label : ''}
-                style={{
-                  display: 'flex', alignItems: 'center',
-                  gap: isOpen ? 10 : 0,
-                  justifyContent: isOpen ? 'flex-start' : 'center',
-                  padding: '9px 10px', borderRadius: 'var(--r-md)',
-                  marginBottom: 2, fontSize: '0.875rem',
-                  color: active ? 'var(--clr-text)' : 'var(--clr-text-muted)',
-                  background: active ? 'var(--clr-primary-glow)' : 'transparent',
-                  fontWeight: active ? 600 : 400,
-                  transition: 'all var(--tr-fast)',
-                  whiteSpace: 'nowrap', overflow: 'hidden',
-                }}
+                className={[
+                  'sidebar-nav-link',
+                  active ? 'sidebar-nav-link--active' : '',
+                  isOpen ? 'sidebar-nav-link--open' : 'sidebar-nav-link--collapsed',
+                ].join(' ')}
               >
-                <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{icon}</span>
-                {isOpen && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>}
+                <span className="sidebar-nav-icon">{icon}</span>
+                {isOpen && <span className="sidebar-nav-label">{label}</span>}
                 {label === 'Messages' && unread > 0 && isOpen && (
-                  <span className="badge badge-primary" style={{ marginLeft: 'auto', padding: '1px 7px', fontSize: '0.7rem' }}>
+                  <span className="badge badge-primary sidebar-unread-badge">
                     {unread}
                   </span>
                 )}
                 {label === 'Messages' && unread > 0 && !isOpen && (
-                  <span style={{
-                    position: 'absolute', top: 4, right: 4,
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: 'var(--clr-primary)',
-                  }} />
+                  <span className="sidebar-unread-dot" />
                 )}
               </Link>
             );
@@ -206,29 +152,19 @@ export const Sidebar = ({ defaultOpen = true }) => {
         </nav>
 
         {/* Logout */}
-        <div style={{ padding: '10px 6px', borderTop: '1px solid var(--clr-border)', flexShrink: 0 }}>
+        <div className="sidebar-footer">
           <button
             onClick={logout}
             title="Logout"
-            style={{
-              display: 'flex', alignItems: 'center',
-              justifyContent: isOpen ? 'flex-start' : 'center',
-              gap: 8, width: '100%',
-              padding: '9px 10px', borderRadius: 'var(--r-md)',
-              background: 'none', border: 'none',
-              color: 'var(--clr-text-muted)', fontSize: '0.875rem',
-              cursor: 'pointer', transition: 'all var(--tr-fast)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.12)'; e.currentTarget.style.color = 'var(--clr-danger)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--clr-text-muted)'; }}
+            className={`sidebar-logout ${isOpen ? 'sidebar-logout--open' : 'sidebar-logout--collapsed'}`}
           >
-            <span style={{ fontSize: '1.1rem' }}>🚪</span>
+            <span className="sidebar-logout-icon">🚪</span>
             {isOpen && <span>Logout</span>}
           </button>
         </div>
       </aside>
 
-      {/* Main content offset div injected as CSS variable update */}
+      {/* Main content offset via CSS variable */}
       <style>{`:root { --sidebar-w: ${sidebarW}; }`}</style>
     </>
   );

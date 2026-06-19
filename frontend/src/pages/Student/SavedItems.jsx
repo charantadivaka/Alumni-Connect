@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { bookmarkService } from '../../services/otherServices';
+import '../../styles/Student/SavedItems.css';
 
 const MODEL_LABELS = {
   Job:          { icon: '💼', label: 'Job',           color: '#6c63ff' },

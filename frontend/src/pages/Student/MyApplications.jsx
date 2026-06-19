@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { applicationService } from '../../services/jobService';
+import '../../styles/Student/MyApplications.css';
 
 const MyApplications = () => {
   const [applications, setApplications] = useState([]);

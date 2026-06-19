@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { adminService } from '../../services/adminService';
+import '../../styles/Admin/VerificationQueue.css';
 
 const VerificationQueue = () => {
   const [queue, setQueue] = useState([]);
@@ -18,9 +19,7 @@ const VerificationQueue = () => {
     }
   };
 
-  useEffect(() => {
-    fetchQueue();
-  }, []);
+  useEffect(() => { fetchQueue(); }, []);
 
   const handleVerify = async (id, status) => {
     try {
@@ -40,33 +39,35 @@ const VerificationQueue = () => {
           <p>Review and verify new alumni registrations</p>
         </div>
 
-        {error && <div className="card" style={{ color: 'var(--clr-danger)', marginBottom: 'var(--sp-md)' }}>{error}</div>}
+        {error && <div className="feedback-banner feedback-banner--error">{error}</div>}
 
         {loading ? (
-          <div style={{ padding: 'var(--sp-xl)', textAlign: 'center' }}><span className="spinner" /> Loading...</div>
+          <div className="loading-state"><span className="spinner" /> Loading...</div>
         ) : queue.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: 'var(--sp-xl)' }}>
-            <span style={{ fontSize: '2rem' }}>✅</span>
+          <div className="card verification-empty">
+            <span className="verification-empty-icon">✅</span>
             <h3>All Caught Up!</h3>
             <p className="text-muted">No pending alumni verifications.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 'var(--sp-md)' }}>
+          <div className="verification-list">
             {queue.map(user => (
-              <div key={user._id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div key={user._id} className="card verification-card">
                 <div>
-                  <h3 style={{ margin: 0 }}>{user.name}</h3>
-                  <p className="text-muted" style={{ margin: '4px 0' }}>{user.email} • {user.department} • Class of {user.graduationYear}</p>
+                  <h3 className="verification-name">{user.name}</h3>
+                  <p className="text-muted verification-meta">
+                    {user.email} • {user.department} • Class of {user.graduationYear}
+                  </p>
                   <p className="text-sm"><strong>Company:</strong> {user.company}</p>
                   {user.idProof && (
-                    <a href={user.idProof} target="_blank" rel="noreferrer" style={{ fontSize: '0.875rem', color: 'var(--clr-primary)' }}>
+                    <a href={user.idProof} target="_blank" rel="noreferrer" className="verification-id-link">
                       📄 View ID Proof
                     </a>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="table-actions">
                   <button className="btn btn-primary" onClick={() => handleVerify(user._id, 'Verified')}>Approve</button>
-                  <button className="btn btn-ghost" onClick={() => handleVerify(user._id, 'Rejected')} style={{ color: 'var(--clr-danger)' }}>Reject</button>
+                  <button className="btn btn-ghost" style={{ color: 'var(--clr-danger)' }} onClick={() => handleVerify(user._id, 'Rejected')}>Reject</button>
                 </div>
               </div>
             ))}

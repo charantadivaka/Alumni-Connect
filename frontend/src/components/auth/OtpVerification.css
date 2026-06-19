@@ -1,0 +1,168 @@
+/* ─── OTP Verification Page ─────────────────────────────────────────────── */
+.otp-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-lg);
+  background: var(--clr-bg);
+}
+
+.otp-card {
+  width: 100%;
+  max-width: 460px;
+  padding: var(--sp-2xl);
+}
+
+/* ─── Icon Ring ──────────────────────────────────────────────────────────── */
+.otp-icon-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+  border: 2px solid rgba(99, 102, 241, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto var(--sp-md);
+}
+
+.otp-header {
+  text-align: center;
+  margin-bottom: var(--sp-xl);
+}
+
+.otp-header h2 {
+  margin: 0 0 var(--sp-xs);
+  font-size: 1.5rem;
+}
+
+.otp-header-sub {
+  color: var(--clr-text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.otp-email-display {
+  color: var(--clr-primary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 4px 0 0;
+}
+
+/* ─── Feedback Banners ───────────────────────────────────────────────────── */
+.otp-banner {
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin-bottom: var(--sp-md);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.otp-banner--error {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: var(--clr-danger);
+}
+
+.otp-banner--success {
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: var(--clr-success);
+}
+
+/* ─── OTP Digit Boxes Row ────────────────────────────────────────────────── */
+.otp-boxes-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: var(--sp-xl);
+}
+
+/* Base OTP digit input — dynamic border/background controlled by JS class */
+.otp-digit-box {
+  width: 52px;
+  height: 60px;
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-family: monospace;
+  text-align: center;
+  border: 2px solid var(--clr-border);
+  border-radius: var(--r-lg);
+  background: var(--clr-bg-elevated);
+  color: var(--clr-text);
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  caret-color: var(--clr-primary);
+  cursor: text;
+  box-shadow: none;
+}
+
+.otp-digit-box--filled {
+  border-color: var(--clr-primary);
+  background: rgba(99, 102, 241, 0.08);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* ─── Verify Button Loader ───────────────────────────────────────────────── */
+.otp-loading-span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.otp-spin-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ─── Resend Section ─────────────────────────────────────────────────────── */
+.otp-resend-section {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--clr-text-muted);
+}
+
+.otp-countdown strong {
+  color: var(--clr-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.otp-resend-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--clr-primary);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.otp-resend-btn:disabled {
+  opacity: 0.6;
+}
+
+/* ─── Back Link ──────────────────────────────────────────────────────────── */
+.otp-back-section {
+  text-align: center;
+  margin-top: var(--sp-lg);
+}
+
+.otp-back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--clr-text-muted);
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.otp-back-btn:hover {
+  color: var(--clr-text);
+}

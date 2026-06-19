@@ -4,6 +4,7 @@ import { authService } from '../../services/authService';
 import { collegeService } from '../../services/collegeService';
 import { PublicNavbar } from '../../components/layout/PublicNavbar';
 import OtpVerification from '../../components/auth/OtpVerification';
+import '../../styles/Home/StudentRegister.css';
 
 const SKILLS_SUGGESTIONS = ['React','Node.js','Python','Java','MongoDB','SQL','AWS','Git','TypeScript','Machine Learning'];
 const YEARS = [1, 2, 3, 4];
@@ -21,7 +22,7 @@ const StudentRegister = () => {
   const [loading, setLoading] = useState(false);
 
   // OTP flow state
-  const [otpSent, setOtpSent] = useState(false); // true → show OTP screen
+  const [otpSent, setOtpSent] = useState(false);
 
   // College state
   const [colleges, setColleges] = useState([]);
@@ -60,14 +61,12 @@ const StudentRegister = () => {
 
   const handleSubmit = async e => {
     e.preventDefault(); setError(''); setLoading(true);
-    // Client-side guard: if a college is selected and roll no. doesn't match, block submit
     if (selectedCollege && rollValidation === false) {
       setError(`Invalid roll number format. Expected format for ${selectedCollege.name}: ${selectedCollege.exampleFormat}`);
       setLoading(false);
       return;
     }
     try {
-      // Step 1: send OTP to email (backend validates fields + sends email)
       await authService.sendOtp({
         ...form, role: 'student',
         careerInterests: form.careerInterests.split(',').map(s => s.trim()).filter(Boolean),
@@ -75,7 +74,6 @@ const StudentRegister = () => {
         gpa: form.gpa ? Number(form.gpa) : undefined,
         college: form.college || undefined,
       });
-      // Show OTP verification screen
       setOtpSent(true);
     } catch (err) {
       setError(err.message);
@@ -84,11 +82,10 @@ const StudentRegister = () => {
     }
   };
 
-  // Roll number input border color
-  const rollBorder =
-    rollValidation === true  ? '1.5px solid var(--clr-success)' :
-    rollValidation === false ? '1.5px solid var(--clr-danger)' :
-    undefined;
+  const rollBorderClass =
+    rollValidation === true  ? 'roll-input--valid' :
+    rollValidation === false ? 'roll-input--invalid' :
+    '';
 
   // ── OTP Screen ────────────────────────────────────────────────────────────
   if (otpSent) {
@@ -108,17 +105,17 @@ const StudentRegister = () => {
   return (
     <div>
       <PublicNavbar />
-      <div style={{ minHeight: '100vh', padding: '90px var(--sp-lg) var(--sp-2xl)', display: 'flex', justifyContent: 'center' }}>
-        <div className="card" style={{ width: '100%', maxWidth: 540 }}>
-          <div style={{ textAlign: 'center', marginBottom: 'var(--sp-xl)' }}>
-            <div style={{ fontSize: '2rem' }}>👨‍🎓</div>
-            <h2 style={{ marginTop: 'var(--sp-sm)' }}>Student Registration</h2>
-            <p style={{ fontSize: '0.875rem' }}>Create your profile and start connecting</p>
+      <div className="auth-page auth-page--register">
+        <div className="card auth-card auth-card--register">
+          <div className="auth-card-header">
+            <div className="auth-card-icon">👨‍🎓</div>
+            <h2 className="auth-card-title">Student Registration</h2>
+            <p className="auth-card-sub">Create your profile and start connecting</p>
           </div>
 
-          {error && <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 'var(--r-md)', padding: '10px 14px', color: 'var(--clr-danger)', marginBottom: 'var(--sp-md)', fontSize: '0.875rem' }}>{error}</div>}
+          {error && <div className="auth-error-banner">{error}</div>}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-md)' }}>
+          <form onSubmit={handleSubmit} className="auth-form">
 
             {/* Name */}
             <div className="form-group">
@@ -128,7 +125,10 @@ const StudentRegister = () => {
 
             {/* College Selector */}
             <div className="form-group">
-              <label className="form-label">College {colleges.length > 0 && <span style={{ color: 'var(--clr-text-muted)', fontWeight: 400 }}>(select to validate roll number)</span>}</label>
+              <label className="form-label">
+                College{' '}
+                {colleges.length > 0 && <span className="roll-label-hint">(select to validate roll number)</span>}
+              </label>
               {colleges.length === 0 ? (
                 <input className="form-input" placeholder="No colleges configured yet — ask admin" disabled style={{ opacity: 0.6 }} />
               ) : (
@@ -146,24 +146,23 @@ const StudentRegister = () => {
               <label className="form-label">
                 College Roll No.
                 {selectedCollege && (
-                  <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--clr-text-muted)', fontSize: '0.82rem' }}>
-                    Expected: <code style={{ background: 'var(--clr-bg-elevated)', padding: '1px 6px', borderRadius: 4, color: 'var(--clr-primary)' }}>{selectedCollege.exampleFormat}</code>
+                  <span className="roll-label-hint">
+                    Expected: <code className="roll-code-hint">{selectedCollege.exampleFormat}</code>
                   </span>
                 )}
               </label>
               <input
-                className="form-input"
+                className={`form-input ${rollBorderClass}`}
                 placeholder={selectedCollege ? selectedCollege.exampleFormat : '21CS001'}
                 required
                 value={form.collegeRollNumber}
                 onChange={e => set('collegeRollNumber', e.target.value)}
-                style={{ border: rollBorder, transition: 'border-color 0.2s' }}
               />
               {rollValidation === true && (
-                <div style={{ fontSize: '0.8rem', color: 'var(--clr-success)', marginTop: 4, fontWeight: 600 }}>✅ Roll number format is valid</div>
+                <div className="roll-feedback roll-feedback--valid">✅ Roll number format is valid</div>
               )}
               {rollValidation === false && (
-                <div style={{ fontSize: '0.8rem', color: 'var(--clr-danger)', marginTop: 4, fontWeight: 600 }}>
+                <div className="roll-feedback roll-feedback--invalid">
                   ❌ Format doesn't match {selectedCollege?.name} pattern.
                   {selectedCollege?.patternDescription && <span> {selectedCollege.patternDescription}</span>}
                 </div>
@@ -179,13 +178,13 @@ const StudentRegister = () => {
             {/* Password */}
             <div className="form-group">
               <label className="form-label">Password</label>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <input className="form-input" type={showPassword ? "text" : "password"} placeholder="Min 6 characters" required minLength={6} value={form.password} onChange={e => set('password', e.target.value)} style={{ paddingRight: '40px', width: '100%' }} />
+              <div className="password-field">
+                <input className="form-input" type={showPassword ? 'text' : 'password'} placeholder="Min 6 characters" required minLength={6} value={form.password} onChange={e => set('password', e.target.value)} />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--clr-text-muted)' }}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
@@ -196,7 +195,7 @@ const StudentRegister = () => {
               </div>
             </div>
 
-            <div className="grid-2" style={{ gap: 'var(--sp-md)' }}>
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Department</label>
                 <input className="form-input" placeholder="Computer Science" value={form.department} onChange={e => set('department', e.target.value)} />
@@ -212,21 +211,21 @@ const StudentRegister = () => {
 
             <div className="form-group">
               <label className="form-label">Skills</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+              <div className="skill-tags-row">
                 {form.skills.map(s => (
-                  <span key={s} className="tag" style={{ cursor: 'pointer' }} onClick={() => removeSkill(s)}>
+                  <span key={s} className="tag skill-tag-removable" onClick={() => removeSkill(s)}>
                     {s} ✕
                   </span>
                 ))}
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div className="skill-input-row">
                 <input className="form-input" placeholder="Add a skill…" value={skillInput} onChange={e => setSkillInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill(skillInput))} />
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => addSkill(skillInput)}>Add</button>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+              <div className="skill-suggestions-row">
                 {SKILLS_SUGGESTIONS.filter(s => !form.skills.includes(s)).map(s => (
-                  <span key={s} onClick={() => addSkill(s)} style={{ cursor: 'pointer', fontSize: '0.75rem', padding: '2px 8px', background: 'var(--clr-bg-elevated)', borderRadius: 'var(--r-full)', color: 'var(--clr-text-muted)', border: '1px solid var(--clr-border)' }}>
+                  <span key={s} onClick={() => addSkill(s)} className="skill-suggestion-chip">
                     + {s}
                   </span>
                 ))}
@@ -244,23 +243,18 @@ const StudentRegister = () => {
             </div>
 
             {/* Email OTP notice */}
-            <div style={{
-              display: 'flex', alignItems: 'flex-start', gap: 10,
-              background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)',
-              borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: '0.83rem',
-              color: 'var(--clr-text-muted)',
-            }}>
-              <span style={{ fontSize: '1rem', marginTop: 1 }}>📧</span>
-              <span>A <strong style={{ color: 'var(--clr-text)' }}>6-digit verification code</strong> will be sent to your email address after you click "Continue".</span>
+            <div className="otp-notice">
+              <span className="otp-notice-icon">📧</span>
+              <span>A <strong className="otp-notice-strong">6-digit verification code</strong> will be sent to your email address after you click "Continue".</span>
             </div>
 
-            <button className="btn btn-primary btn-full" type="submit" disabled={loading} style={{ marginTop: 'var(--sp-sm)' }}>
+            <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
               {loading ? 'Sending OTP…' : 'Continue →'}
             </button>
           </form>
 
-          <p style={{ textAlign: 'center', marginTop: 'var(--sp-lg)', fontSize: '0.875rem', color: 'var(--clr-text-muted)' }}>
-            Already have an account? <Link to="/login" style={{ color: 'var(--clr-primary)', fontWeight: 600 }}>Sign in</Link>
+          <p className="auth-footer">
+            Already have an account? <Link to="/login" className="auth-footer-link">Sign in</Link>
           </p>
         </div>
       </div>

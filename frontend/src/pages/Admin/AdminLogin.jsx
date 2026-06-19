@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 import { PublicNavbar } from '../../components/layout/PublicNavbar';
+import '../../styles/Admin/AdminLogin.css';
 
 const AdminLogin = () => {
   const { login } = useAuth();
@@ -32,21 +33,19 @@ const AdminLogin = () => {
   return (
     <div>
       <PublicNavbar />
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px var(--sp-lg)' }}>
-        <div className="card" style={{ width: '100%', maxWidth: 420 }}>
-          <div style={{ textAlign: 'center', marginBottom: 'var(--sp-xl)' }}>
-            <span style={{ fontSize: '2.5rem' }}>🛡️</span>
-            <h2 style={{ marginTop: 'var(--sp-sm)' }}>Admin Login</h2>
-            <p style={{ fontSize: '0.9rem' }}>Secure access to platform controls</p>
+      <div className="auth-page">
+        <div className="card auth-card admin-login-card">
+          <div className="auth-card-header">
+            <span className="auth-card-icon">🛡️</span>
+            <h2 className="auth-card-title">Admin Login</h2>
+            <p className="auth-card-sub">Secure access to platform controls</p>
           </div>
 
           {error && (
-            <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 'var(--r-md)', padding: 'var(--sp-sm) var(--sp-md)', marginBottom: 'var(--sp-md)', color: 'var(--clr-danger)', fontSize: '0.875rem' }}>
-              {error}
-            </div>
+            <div className="auth-error-banner">{error}</div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-md)' }}>
+          <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
               <label className="form-label">Username</label>
               <input className="form-input" type="text" name="username" placeholder="Admin"
@@ -54,14 +53,14 @@ const AdminLogin = () => {
             </div>
             <div className="form-group">
               <label className="form-label">Password</label>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <input className="form-input" type={showPassword ? "text" : "password"} name="password" placeholder="••••••••"
-                  value={form.password} onChange={handleChange} required style={{ paddingRight: '40px', width: '100%' }} />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPassword(!showPassword)} 
-                  style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--clr-text-muted)' }}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+              <div className="password-field">
+                <input className="form-input" type={showPassword ? 'text' : 'password'} name="password"
+                  placeholder="••••••••" value={form.password} onChange={handleChange} required />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
