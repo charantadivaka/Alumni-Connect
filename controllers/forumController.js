@@ -6,6 +6,16 @@ const getThreads = async (req, res) => {
     try {
         const { category } = req.query;
         const filter = category ? { category } : {};
+
+        // Only show threads from user's college (allow admins to see all, allow legacy threads)
+        if (req.user && req.user.role !== 'admin' && req.user.college) {
+            filter.$or = [
+                { college: req.user.college },
+                { college: { $exists: false } },
+                { college: null }
+            ];
+        }
+
         const threads = await Forum.find(filter)
             .populate('author', 'name profilePicture role company')
             .sort({ isPinned: -1, createdAt: -1 });
@@ -71,7 +81,13 @@ const createThread = async (req, res) => {
             return res.status(403).json({ message: spamErr.message });
         }
 
-        const thread = await Forum.create({ title, content, category, author: req.user._id });
+        const thread = await Forum.create({ 
+            title, 
+            content, 
+            category, 
+            author: req.user._id,
+            college: req.user.college || null
+        });
         res.status(201).json(thread);
     } catch (err) {
         res.status(500).json({ message: err.message });

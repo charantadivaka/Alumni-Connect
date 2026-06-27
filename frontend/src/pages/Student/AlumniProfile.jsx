@@ -43,7 +43,7 @@ const AlumniProfile = () => {
       <Sidebar />
       <main className="dashboard-main fade-in">
         <div className="page-header" style={{ marginBottom: 16 }}>
-          <Link to="/student/browse" className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }}>← Back to Directory</Link>
+          <Link to={`/${user.role}/network`} className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }}>← Back to Directory</Link>
           <h1>Alumni Profile</h1>
         </div>
 
@@ -54,9 +54,17 @@ const AlumniProfile = () => {
         ) : profile ? (
           <div className="card" style={{ maxWidth: 800 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
-              <div className="avatar-placeholder" style={{ width: 100, height: 100, fontSize: '2.5rem' }}>
+              <div style={{
+                width: 100, height: 100, borderRadius: '50%', overflow: 'hidden',
+                background: 'var(--grad-primary)', display: 'grid', placeItems: 'center',
+                fontSize: '2.5rem', color: '#fff', fontWeight: 700, flexShrink: 0,
+              }}>
                 {profile.profilePicture ? (
-                  <img src={profile.profilePicture} alt={profile.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                  <img
+                    src={profile.profilePicture}
+                    alt={profile.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
                 ) : (
                   profile.name?.[0]?.toUpperCase()
                 )}

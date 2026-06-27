@@ -13,6 +13,9 @@ const StudentEvents = () => {
   const [error, setError] = useState('');
   const [rsvping, setRsvping] = useState(null);
   const [filterCategory, setFilterCategory] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ title: '', description: '', category: 'Hackathon', date: '', location: 'Online', link: '' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,6 +34,34 @@ const StudentEvents = () => {
     };
     fetchData();
   }, []);
+
+  const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!form.title || !form.date || !form.description) { alert('Title, Date, and Description are required.'); return; }
+    try {
+      setCreating(true);
+      const newEvent = await eventService.create(form);
+      setEvents(prev => [newEvent, ...prev]);
+      setForm({ title: '', description: '', category: 'Hackathon', date: '', location: 'Online', link: '' });
+      setShowForm(false);
+    } catch (err) {
+      alert(err.message || 'Failed to create event.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this event?')) return;
+    try {
+      await eventService.remove(id);
+      setEvents(prev => prev.filter(ev => ev._id !== id));
+    } catch (err) {
+      alert(err.message || 'Failed to delete event.');
+    }
+  };
 
   const handleToggleBookmark = async (e, eventId) => {
     e.stopPropagation();
@@ -77,7 +108,7 @@ const StudentEvents = () => {
     }
   };
 
-  const CATEGORIES = ['', 'Webinar', 'Career Fair', 'Networking', 'Workshop', 'Other'];
+  const CATEGORIES = ['', 'Hackathon', 'Workshop'];
 
   const displayed = filterCategory
     ? events.filter(ev => ev.category === filterCategory)
@@ -92,10 +123,59 @@ const StudentEvents = () => {
             <h1>Events</h1>
             <p>Upcoming networking, webinars, and career events.</p>
           </div>
-          <select className="form-input" style={{ width: 'auto' }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c || 'All Categories'}</option>)}
-          </select>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <select className="form-input" style={{ width: 'auto' }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c || 'All Categories'}</option>)}
+            </select>
+            <button className="btn btn-primary" onClick={() => setShowForm(v => !v)}>
+              {showForm ? 'Cancel' : '+ Create Event'}
+            </button>
+          </div>
         </div>
+
+        {/* Create Event Form */}
+        {showForm && (
+          <div className="card" style={{ marginBottom: 24 }}>
+            <h3 style={{ marginBottom: 16 }}>New Event</h3>
+            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+              <div className="grid-2" style={{ gap: 15 }}>
+                <div className="form-group">
+                  <label className="form-label">Event Title *</label>
+                  <input type="text" name="title" className="form-input" required value={form.title} onChange={handleChange} placeholder="e.g. Hackfest 2026 / Web Development Workshop" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Category</label>
+                  <select name="category" className="form-input" value={form.category} onChange={handleChange}>
+                    <option value="Hackathon">Hackathon</option>
+                    <option value="Workshop">Workshop</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid-2" style={{ gap: 15 }}>
+                <div className="form-group">
+                  <label className="form-label">Date & Time *</label>
+                  <input type="datetime-local" name="date" className="form-input" required value={form.date} onChange={handleChange} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Location</label>
+                  <input type="text" name="location" className="form-input" value={form.location} onChange={handleChange} placeholder="Online / Seminar Hall" />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Event Link (optional)</label>
+                <input type="url" name="link" className="form-input" value={form.link} onChange={handleChange} placeholder="https://meet.google.com/..." />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Description *</label>
+                <textarea name="description" className="form-input" rows={3} required value={form.description} onChange={handleChange} placeholder="Describe the event, hackathon guidelines, agenda..." />
+              </div>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={creating}>{creating ? 'Creating...' : 'Create Event'}</button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {error && <div className="card" style={{ color: 'var(--clr-danger)', marginBottom: 20 }}>{error}</div>}
 
@@ -129,12 +209,12 @@ const StudentEvents = () => {
                   >
                     🚩
                   </button>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <h3 style={{ margin: 0, paddingRight: '30px' }}>{ev.title}</h3>
-                    <span className="badge badge-ghost">{ev.category}</span>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <h3 style={{ margin: 0, paddingRight: '75px' }}>{ev.title}</h3>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: '0.875rem', color: 'var(--clr-text-muted)' }}>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: '0.875rem', color: 'var(--clr-text-muted)', alignItems: 'center' }}>
+                    <span className="badge badge-ghost" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{ev.category}</span>
                     <span>📅 {eventDate.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
                     <span>📍 {ev.location}</span>
                   </div>
@@ -152,17 +232,23 @@ const StudentEvents = () => {
                       {ev.link && (
                         <a href={ev.link} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">🔗 Link</a>
                       )}
-                      {!isPast && (
-                        <button
-                          className={`btn btn-sm ${isRsvped ? 'btn-ghost' : 'btn-primary'}`}
-                          style={isRsvped ? { color: 'var(--clr-danger)' } : {}}
-                          onClick={() => handleRsvp(ev._id)}
-                          disabled={rsvping === ev._id}
-                        >
-                          {rsvping === ev._id ? '...' : isRsvped ? 'Cancel RSVP' : 'RSVP'}
-                        </button>
+                      {ev.createdBy?._id === user._id || ev.createdBy === user._id ? (
+                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--clr-danger)' }} onClick={() => handleDelete(ev._id)}>Delete</button>
+                      ) : (
+                        <>
+                          {!isPast && (
+                            <button
+                              className={`btn btn-sm ${isRsvped ? 'btn-ghost' : 'btn-primary'}`}
+                              style={isRsvped ? { color: 'var(--clr-danger)' } : {}}
+                              onClick={() => handleRsvp(ev._id)}
+                              disabled={rsvping === ev._id}
+                            >
+                              {rsvping === ev._id ? '...' : isRsvped ? 'Cancel RSVP' : 'RSVP'}
+                            </button>
+                          )}
+                          {isPast && <span className="badge badge-ghost">Past Event</span>}
+                        </>
                       )}
-                      {isPast && <span className="badge badge-ghost">Past Event</span>}
                     </div>
                   </div>
                 </div>

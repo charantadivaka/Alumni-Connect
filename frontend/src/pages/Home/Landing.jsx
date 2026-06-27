@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PublicNavbar } from '../../components/layout/PublicNavbar';
+import { PublicFooter } from '../../components/layout/PublicFooter';
 import '../../styles/Home/Landing.css';
 
 const features = [
@@ -74,18 +75,7 @@ const Landing = () => {
         </Link>
       </section>
 
-      {/* Footer */}
-      <footer className="landing-footer">
-        <div className="landing-footer-container">
-          <div className="landing-footer-logo">
-            <span className="logo-icon">🎓</span>
-            <span className="logo-text">AlumniConnect</span>
-          </div>
-          <div className="landing-footer-copyright">
-            © {new Date().getFullYear()} AlumniConnect. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 };

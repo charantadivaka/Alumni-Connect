@@ -1,4 +1,5 @@
 import { PublicNavbar } from '../../components/layout/PublicNavbar';
+import { PublicFooter } from '../../components/layout/PublicFooter';
 import { Link } from 'react-router-dom';
 import '../../styles/Home/About.css';
 
@@ -13,7 +14,7 @@ const About = () => (
 
       {[
         { title: '🎯 Our Mission', text: 'Create a structured, role-based platform where university students can access mentorship, mock interviews, job referrals, and community discussions — directly from alumni who walked the same halls.' },
-        { title: '🔐 How Authentication Works', text: 'Students and alumni go through separate onboarding flows. Alumni are verified by admin via ID proof review. JWT tokens are stored in httpOnly cookies — fully XSS resistant.' },
+        { title: '🚀 Fast-Track Career Growth', text: 'Gain insights into industry trends, get actionable advice for your career path, and receive referrals to top companies from alumni who have been there.' },
         { title: '⚡ Smart Matching', text: 'Our algorithm scores every alumnus against your skills and career interests. The more overlap, the higher the match score — so you always see the most relevant mentors first.' },
         { title: '💼 Job Board', text: 'Alumni post jobs at their companies. Students apply with a resume directly on the platform. Alumni manage applications through a 5-stage pipeline: Applied → Under Review → Interview → Offer → Rejected.' },
       ].map(({ title, text }) => (
@@ -27,6 +28,7 @@ const About = () => (
         <Link to="/role-select" className="btn btn-primary about-cta-btn">Join Now</Link>
       </div>
     </div>
+    <PublicFooter />
   </div>
 );
 

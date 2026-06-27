@@ -115,18 +115,17 @@ const saveMessage = async (req, res) => {
 
         if (!receiver) return res.status(404).json({ message: "Receiver not found" });
 
-        // If student is messaging an alumni, they must have an accepted connection
-        if (sender.role === 'student' && receiver.role === 'alumni') {
-            const connection = await Connection.findOne({
-                $or: [
-                    { sender: senderId, receiver: receiverId },
-                    { sender: receiverId, receiver: senderId }
-                ]
-            });
+        // Sender and receiver must have an accepted connection to message each other
+        const connection = await Connection.findOne({
+            $or: [
+                { sender: senderId, receiver: receiverId },
+                { sender: receiverId, receiver: senderId }
+            ],
+            status: 'Accepted'
+        });
 
-            if (!connection || connection.status !== 'Accepted') {
-                return res.status(403).json({ message: "You must be connected to message this alumni." });
-            }
+        if (!connection) {
+            return res.status(403).json({ message: "You must be connected to message this person." });
         }
 
         const msg = await Message.create({

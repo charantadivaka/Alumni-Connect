@@ -5,9 +5,34 @@ const MentorSlot = require('../models/MentorSlot');
 const createSlot = async (req, res) => {
     try {
         const { date, startTime, duration, type } = req.body;
+        const alumniId = req.user._id;
+
+        const dur = Number(duration) || 45;
+
+        // Convert new slot time to minutes from midnight
+        const [newH, newM] = startTime.split(':').map(Number);
+        const newStart = newH * 60 + newM;
+        const newEnd = newStart + dur;
+
+        // Get all existing slots for this alumni on the same date
+        const existingSlots = await MentorSlot.find({ alumni: alumniId, date });
+
+        for (const slot of existingSlots) {
+            const [exH, exM] = slot.startTime.split(':').map(Number);
+            const exStart = exH * 60 + exM;
+            const exEnd = exStart + slot.duration;
+
+            // Check for overlap
+            if (newStart < exEnd && newEnd > exStart) {
+                return res.status(400).json({ 
+                    message: `Time slot conflicts with an existing slot: ${slot.startTime} (${slot.duration} min).` 
+                });
+            }
+        }
+
         const slot = await MentorSlot.create({
-            alumni: req.user._id, date, startTime,
-            duration: duration || 45, type: type || 'Both',
+            alumni: alumniId, date, startTime,
+            duration: dur, type: type || 'Both',
         });
         res.status(201).json(slot);
     } catch (err) {

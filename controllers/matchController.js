@@ -17,6 +17,7 @@ const getMatches = async (req, res) => {
         }
 
         let filter = {
+            _id: { $ne: req.user._id },
             role: 'alumni',
             verificationStatus: 'Verified',
             isSuspended: false,
@@ -24,7 +25,7 @@ const getMatches = async (req, res) => {
         };
 
         if (industry)      filter.industry = { $regex: industry, $options: 'i' };
-        if (availability === 'true') filter.mentorshipAvailability = { $in: ['Available', 'Limited'] };
+        if (availability === 'true') filter.mentorshipAvailability = 'Available';
         if (skill)         filter.skills = { $in: [new RegExp(skill, 'i')] };
         if (search) {
             filter.$or = [
@@ -61,6 +62,7 @@ const getDirectory = async (req, res) => {
         const requester = await User.findById(req.user._id).populate('college', 'name');
 
         const filter = {
+            _id: { $ne: req.user._id },
             role: 'alumni',
             verificationStatus: 'Verified',
             isSuspended: false,

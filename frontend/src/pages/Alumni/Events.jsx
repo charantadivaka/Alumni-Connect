@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { eventService } from '../../services/eventService';
 import '../../styles/Alumni/Events.css';
 
-const CATEGORIES = ['Webinar', 'Career Fair', 'Networking', 'Workshop', 'Other'];
+const CATEGORIES = ['Webinar', 'Networking'];
 
 const AlumniEvents = () => {
   const { user } = useAuth();
@@ -13,7 +13,8 @@ const AlumniEvents = () => {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', category: 'Other', date: '', location: 'Online', link: '' });
+  const [form, setForm] = useState({ title: '', description: '', category: 'Webinar', date: '', location: 'Online', link: '' });
+  const [filterCategory, setFilterCategory] = useState('');
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -38,7 +39,7 @@ const AlumniEvents = () => {
       setCreating(true);
       const newEvent = await eventService.create(form);
       setEvents(prev => [newEvent, ...prev]);
-      setForm({ title: '', description: '', category: 'Other', date: '', location: 'Online', link: '' });
+      setForm({ title: '', description: '', category: 'Webinar', date: '', location: 'Online', link: '' });
       setShowForm(false);
     } catch (err) {
       alert(err.message || 'Failed to create event.');
@@ -69,6 +70,10 @@ const AlumniEvents = () => {
     }
   };
 
+  const displayed = filterCategory
+    ? events.filter(ev => ev.category === filterCategory)
+    : events;
+
   return (
     <div className="dashboard-layout">
       <Sidebar />
@@ -78,9 +83,15 @@ const AlumniEvents = () => {
             <h1>Events</h1>
             <p>Create and manage events for your alumni community.</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowForm(v => !v)}>
-            {showForm ? 'Cancel' : '+ Create Event'}
-          </button>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <select className="form-input" style={{ width: 'auto' }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+              <option value="">All Categories</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <button className="btn btn-primary" onClick={() => setShowForm(v => !v)}>
+              {showForm ? 'Cancel' : '+ Create Event'}
+            </button>
+          </div>
         </div>
 
         {error && <div className="card" style={{ color: 'var(--clr-danger)', marginBottom: 20 }}>{error}</div>}
@@ -130,15 +141,15 @@ const AlumniEvents = () => {
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading...</div>
-        ) : events.length === 0 ? (
+        ) : displayed.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: 40 }}>
             <span style={{ fontSize: '2rem' }}>📅</span>
-            <h3>No Events Yet</h3>
-            <p className="text-muted">Be the first to create an event for the community!</p>
+            <h3>No Events Found</h3>
+            <p className="text-muted">No upcoming events match your selected criteria.</p>
           </div>
         ) : (
           <div className="grid-2">
-            {events.map(ev => {
+            {displayed.map(ev => {
               const isOwner = ev.createdBy?._id === user._id || ev.createdBy === user._id;
               return (
                 <div key={ev._id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

@@ -98,7 +98,7 @@ const ManageSlots = () => {
                   <select name="type" className="form-input" value={form.type} onChange={handleChange}>
                     <option value="Both">Both</option>
                     <option value="Mentorship">Mentorship Only</option>
-                    <option value="Interview">Mock Interview Only</option>
+                    <option value="MockInterview">Mock Interview Only</option>
                   </select>
                 </div>
               </div>

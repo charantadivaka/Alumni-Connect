@@ -44,15 +44,12 @@ Before the server can save anything, it needs to know what the shapes of things 
 9. **`models/Referral.js`** and **`models/Resume.js`**
    * *What they are:* Blueprints for job referral requests and uploaded resumes.
    * *Why read them:* They show how students ask alumni for referrals and manage their resumes.
-10. **`models/Startup.js`**
-    * *What it is:* The blueprint for alumni startups.
-    * *Why read it:* It allows founders to showcase their ideas and find student collaborators.
-11. **`models/Event.js`**, **`models/Forum.js`**, and **`models/Story.js`**
+10. **`models/Event.js`**, **`models/Forum.js`**, and **`models/Story.js`**
     * *What they are:* Blueprints for webinars, discussions, and alumni success stories.
     * *Why read them:* They handle the community features (RSVPs, forum upvotes, story likes).
-12. **`models/Bookmark.js`**
+11. **`models/Bookmark.js`**
     * *What it is:* The blueprint for saving items.
-    * *Why read it:* It lets users bookmark jobs, stories, startups, or profiles.
+    * *Why read it:* It lets users bookmark jobs, stories, or profiles.
 
 ---
 
@@ -116,20 +113,16 @@ Controllers are the scripts that *do* things (like register a user or post a job
     * *What they do:* Handle student referral requests and alumni responses.
 30. **`controllers/resumeController.js`** & **`routes/resumeRoutes.js`**
     * *What they do:* Save student resumes (as base64 strings) and delete them.
-31. **`controllers/startupController.js`** & **`routes/startupRoutes.js`**
-    * *What they do:* Let alumni post startups and students request collaboration.
-32. **`controllers/eventController.js`** & **`routes/eventRoutes.js`**
+31. **`controllers/eventController.js`** & **`routes/eventRoutes.js`**
     * *What they do:* Create events, RSVP to them, and manage attendee lists.
-33. **`controllers/forumController.js`** & **`routes/forumRoutes.js`**
+32. **`controllers/forumController.js`** & **`routes/forumRoutes.js`**
     * *What they do:* Create threads, write replies, and upvote threads.
-34. **`controllers/storyController.js`** & **`routes/storyRoutes.js`**
+33. **`controllers/storyController.js`** & **`routes/storyRoutes.js`**
     * *What they do:* Publish alumni success stories and track likes.
-35. **`controllers/bookmarkController.js`** & **`routes/bookmarkRoutes.js`**
+34. **`controllers/bookmarkController.js`** & **`routes/bookmarkRoutes.js`**
     * *What they do:* Toggle bookmarks for any model type.
-36. **`controllers/adminController.js`** & **`routes/adminRoutes.js`**
+35. **`controllers/adminController.js`** & **`routes/adminRoutes.js`**
     * *What they do:* Verify alumni accounts, suspend users, and get platform analytics.
-37. **`controllers/aiController.js`** & **`routes/aiRoutes.js`**
-    * *What they do:* Simple rule-based AI engine that scans messages and suggests tips.
 
 ---
 

@@ -44,7 +44,6 @@ const scoreAlumni = (student, alumni) => {
 const getMatchedAlumni = (student, alumniList) => {
     return alumniList
         .map(alumni => ({ alumni, score: scoreAlumni(student, alumni) }))
-        .filter(item => item.score > 0)
         .sort((a, b) => b.score - a.score)
         .map(item => ({ ...item.alumni.toObject(), matchScore: item.score }));
 };

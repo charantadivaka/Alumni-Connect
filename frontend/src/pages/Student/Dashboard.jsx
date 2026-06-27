@@ -63,7 +63,7 @@ const Dashboard = () => {
         setJobs(jobsData.slice(0, 4));
         setMentorships(mentorshipsData.filter(m => m.status === 'Accepted').slice(0, 4));
         setInterviews(interviewsData.filter(i => i.status === 'Accepted').slice(0, 4));
-        setConnections(connsData.filter(c => c.status === 'Accepted'));
+        setConnections(connsData.filter(c => c.receiver?._id === user._id && c.status === 'Pending'));
       } catch (err) {
         console.error('Dashboard data error:', err);
       } finally {
@@ -71,7 +71,17 @@ const Dashboard = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [user._id]);
+
+  const handleConnectionRespond = async (id, status) => {
+    try {
+      await connectionService.respond(id, { status });
+      const connsData = await connectionService.getMy();
+      setConnections(connsData.filter(c => c.receiver?._id === user._id && c.status === 'Pending'));
+    } catch (err) {
+      alert(err?.response?.data?.message || err.message);
+    }
+  };
 
   return (
     <div className="dashboard-layout">
@@ -90,27 +100,29 @@ const Dashboard = () => {
         ) : (
           <div className="student-dashboard-grid">
 
-            {/* ── New Connections ─────────────────────────────────── */}
-            <SectionCard title="New Connections" icon="🤝" color="#6c63ff" linkTo="/student/circle" linkLabel="View My Circle →">
+            {/* ── Pending Connections ─────────────────────────────────── */}
+            <SectionCard title="Pending Connection Requests" icon="🤝" color="#6c63ff" linkTo="/student/circle" linkLabel="View My Circle →">
               {connections.length === 0
-                ? <EmptyMsg msg="No connections yet. Go to Network to find alumni and students." />
-                : connections.slice(0, 4).map(conn => {
-                    const other = conn.sender?._id === user?._id ? conn.receiver : conn.sender;
-                    return (
-                      <div key={conn._id} className="conn-item">
-                        <div className="avatar-placeholder avatar-sm conn-item-avatar">
-                          {other?.name?.[0]?.toUpperCase() || '?'}
-                        </div>
-                        <div className="conn-item-info">
-                          <div className="conn-item-name">{other?.name || 'Unknown'}</div>
-                          <div className="conn-item-role">
-                            {other?.role}{other?.company ? ` · ${other.company}` : ''}
-                          </div>
-                        </div>
-                        <span className="badge badge-success conn-item-badge">✓ Connected</span>
+                ? <EmptyMsg msg="No pending connection requests." />
+                : connections.slice(0, 4).map(c => (
+                    <div key={c._id} className="conn-item" style={{ flexWrap: 'wrap' }}>
+                      <div className="avatar-placeholder avatar-sm conn-item-avatar">
+                        {c.sender?.profilePicture
+                          ? <img src={c.sender.profilePicture} alt={c.sender.name} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }} />
+                          : c.sender?.name?.[0]?.toUpperCase()}
                       </div>
-                    );
-                  })
+                      <div className="conn-item-info">
+                        <div className="conn-item-name">{c.sender?.name || 'Unknown'}</div>
+                        <div className="conn-item-role">
+                          {c.sender?.role}{c.sender?.company ? ` · ${c.sender.company}` : ''}
+                        </div>
+                      </div>
+                      <div className="conn-actions">
+                        <button className="btn btn-success btn-sm" onClick={() => handleConnectionRespond(c._id, 'Accepted')}>Accept</button>
+                        <button className="btn btn-outline btn-sm" onClick={() => handleConnectionRespond(c._id, 'Rejected')}>Reject</button>
+                      </div>
+                    </div>
+                  ))
               }
             </SectionCard>
 

@@ -79,6 +79,16 @@ const AlumniTab = () => {
     }
   };
 
+  const handleRemoveConnection = async (connId, name) => {
+    if (!window.confirm(`Are you sure you want to remove ${name || 'this person'} from your network?`)) return;
+    try {
+      await connectionService.remove(connId);
+      setConnections(prev => prev.filter(c => c._id !== connId));
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to remove connection.');
+    }
+  };
+
   return (
     <div>
       {/* No college warning */}
@@ -166,9 +176,9 @@ const AlumniTab = () => {
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: 'var(--sp-md)', alignItems: 'flex-start', marginBottom: 'var(--sp-md)' }}>
-                  <div className="avatar-placeholder avatar-md" style={{ width: 60, height: 60, fontSize: '1.5rem', flexShrink: 0 }}>
+                  <div className="avatar-placeholder avatar-md" style={{ width: 60, height: 60, fontSize: '1.5rem', flexShrink: 0, overflow: 'hidden' }}>
                     {a.profilePicture
-                      ? <img src={a.profilePicture} alt={a.name} style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover' }} />
+                      ? <img src={a.profilePicture} alt={a.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
                       : a.name?.[0]?.toUpperCase()}
                   </div>
                   <div style={{ minWidth: 0, flex: 1 }}>
@@ -210,7 +220,18 @@ const AlumniTab = () => {
                   <Link to={`/${user.role}/alumni/${a._id}`} className="btn btn-outline btn-sm" style={{ flex: 1, textAlign: 'center' }}>Profile</Link>
                   {connStatus === 'None'     && <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => handleConnect(a._id)}>Connect</button>}
                   {connStatus === 'Pending'  && <button className="btn btn-primary btn-sm" style={{ flex: 1, opacity: 0.7 }} disabled>Request Sent</button>}
-                  {connStatus === 'Accepted' && <span className="badge badge-success" style={{ flex: 1, justifyContent: 'center', fontSize: '0.8rem' }}>✓ Connected</span>}
+                  {connStatus === 'Accepted' && (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span className="badge badge-success" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem' }}>✓ Connected</span>
+                      <button 
+                        className="btn btn-ghost btn-xs" 
+                        style={{ color: 'var(--clr-danger)', fontSize: '0.75rem', padding: '2px 4px', border: 'none', background: 'transparent' }} 
+                        onClick={() => handleRemoveConnection(conn._id, a.name)}
+                      >
+                        Remove Connection
+                      </button>
+                    </div>
+                  )}
                   {connStatus === 'Rejected' && <button className="btn btn-ghost btn-sm" style={{ flex: 1, color: 'var(--clr-danger)' }} disabled>Rejected</button>}
                 </div>
               </div>
@@ -260,6 +281,16 @@ const StudentsTab = () => {
       setConnections(prev => [...prev, { sender: { _id: user._id }, receiver: { _id: id }, status: 'Pending' }]);
     } catch (err) {
       alert(err.response?.data?.message || err.message || 'Failed to send request.');
+    }
+  };
+
+  const handleRemoveConnection = async (connId, name) => {
+    if (!window.confirm(`Are you sure you want to remove ${name || 'this person'} from your network?`)) return;
+    try {
+      await connectionService.remove(connId);
+      setConnections(prev => prev.filter(c => c._id !== connId));
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to remove connection.');
     }
   };
 
@@ -323,7 +354,7 @@ const StudentsTab = () => {
                 <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                   <div className="avatar-placeholder avatar-md" style={{ width: 56, height: 56, fontSize: '1.4rem', flexShrink: 0 }}>
                     {s.profilePicture
-                      ? <img src={s.profilePicture} alt={s.name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover' }} />
+                      ? <img src={s.profilePicture} alt={s.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
                       : s.name?.[0]?.toUpperCase()}
                   </div>
                   <div style={{ minWidth: 0, flex: 1 }}>
@@ -351,10 +382,26 @@ const StudentsTab = () => {
                 )}
 
                 {/* Action */}
-                <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+                <div style={{ display: 'flex', gap: 10, marginTop: 'auto' }}>
+                  <Link
+                    to={`/${user.role}/student/${s._id}`}
+                    className="btn btn-outline btn-sm"
+                    style={{ flex: 1, textAlign: 'center' }}
+                  >Profile</Link>
                   {connStatus === 'None'     && <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => handleConnect(s._id)}>Connect</button>}
                   {connStatus === 'Pending'  && <button className="btn btn-primary btn-sm" style={{ flex: 1, opacity: 0.7 }} disabled>Request Sent</button>}
-                  {connStatus === 'Accepted' && <span className="badge badge-success" style={{ flex: 1, justifyContent: 'center', fontSize: '0.8rem', padding: '8px' }}>✓ Connected</span>}
+                  {connStatus === 'Accepted' && (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span className="badge badge-success" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '8px' }}>✓ Connected</span>
+                      <button 
+                        className="btn btn-ghost btn-xs" 
+                        style={{ color: 'var(--clr-danger)', fontSize: '0.75rem', padding: '2px 4px', border: 'none', background: 'transparent' }} 
+                        onClick={() => handleRemoveConnection(conn._id, s.name)}
+                      >
+                        Remove Connection
+                      </button>
+                    </div>
+                  )}
                   {connStatus === 'Rejected' && <button className="btn btn-ghost btn-sm" style={{ flex: 1, color: 'var(--clr-danger)' }} disabled>Rejected</button>}
                 </div>
               </div>

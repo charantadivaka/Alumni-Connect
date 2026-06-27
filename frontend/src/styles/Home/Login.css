@@ -171,3 +171,20 @@
 .about-card-text { font-size: 0.9rem; }
 .about-cta { text-align: center; margin-top: var(--sp-xl); }
 .about-cta-btn { padding: 14px 40px; }
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .auth-page { padding: 80px var(--sp-md); }
+  .auth-page--register { padding: 80px var(--sp-md) var(--sp-xl); }
+  .auth-card { max-width: 100%; }
+  .auth-card--register { max-width: 100%; }
+  .role-selection-page { padding: 80px var(--sp-md); }
+  .about-page { padding: 80px var(--sp-md) var(--sp-xl); }
+  .skill-input-row { flex-direction: column; }
+}
+@media (max-width: 480px) {
+  .auth-card-icon { font-size: 2rem; }
+  .role-card { padding: var(--sp-lg); }
+  .role-card-icon { font-size: 2.5rem; }
+  .role-selection-inner { max-width: 100%; }
+}

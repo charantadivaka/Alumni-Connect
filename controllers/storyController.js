@@ -4,7 +4,18 @@ const Story = require('../models/Story');
 // @route GET /api/stories
 const getStories = async (req, res) => {
     try {
-        const stories = await Story.find({ isPublished: true })
+        const filter = { isPublished: true };
+
+        // Only show stories from user's college (allow admins to see all, allow legacy stories)
+        if (req.user && req.user.role !== 'admin' && req.user.college) {
+            filter.$or = [
+                { college: req.user.college },
+                { college: { $exists: false } },
+                { college: null }
+            ];
+        }
+
+        const stories = await Story.find(filter)
             .populate('author', 'name profilePicture company designation graduationYear')
             .sort({ createdAt: -1 });
         res.json(stories);
@@ -28,7 +39,11 @@ const getMyStories = async (req, res) => {
 // @route POST /api/stories
 const createStory = async (req, res) => {
     try {
-        const story = await Story.create({ ...req.body, author: req.user._id });
+        const story = await Story.create({ 
+            ...req.body, 
+            author: req.user._id,
+            college: req.user.college || null
+        });
         res.status(201).json(story);
     } catch (err) {
         res.status(500).json({ message: err.message });

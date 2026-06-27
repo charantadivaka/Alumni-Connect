@@ -2,34 +2,50 @@ import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { messageService } from '../../services/messageService';
+import { connectionService } from '../../services/otherServices';
 import '../../styles/Alumni/Messages.css';
+
+const MOBILE_BREAKPOINT = 768;
 
 const Messages = () => {
   const { user } = useAuth();
   const [threads, setThreads] = useState([]);
+  const [connections, setConnections] = useState([]);
   const [loadingThreads, setLoadingThreads] = useState(true);
   const [activeThread, setActiveThread] = useState(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
+  const [showConversation, setShowConversation] = useState(false);
 
   // New Chat Modal
   const [showNewChat, setShowNewChat] = useState(false);
   const [newChatId, setNewChatId] = useState('');
 
   useEffect(() => {
-    const fetchThreads = async () => {
+    const handleResize = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const data = await messageService.getThreads();
-        setThreads(data);
+        const [threadsData, connsData] = await Promise.all([
+          messageService.getThreads(),
+          connectionService.getMy(),
+        ]);
+        setThreads(threadsData);
+        setConnections(connsData.filter(c => c.status === 'Accepted'));
       } catch (err) {
         console.error(err);
       } finally {
         setLoadingThreads(false);
       }
     };
-    fetchThreads();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -41,6 +57,7 @@ const Messages = () => {
     try {
       setLoadingMessages(true);
       setActiveThread({ partner: thread.partner, messages: [] });
+      if (isMobile) setShowConversation(true);
       const msgs = await messageService.getConversation(partnerId);
       setActiveThread({ partner: thread.partner, messages: msgs });
       await messageService.markRead(partnerId);
@@ -99,13 +116,24 @@ const Messages = () => {
      activeThread.messages[0].sender?.toString() === user._id?.toString());
   const isInitiatorWaiting = isFirstMessageMine && !partnerHasReplied;
 
+  const isConnected = !activeThread?.partner || connections.some(c => 
+    c.sender?._id === activeThread.partner._id || 
+    c.receiver?._id === activeThread.partner._id
+  );
+
   return (
     <div className="dashboard-layout">
       <Sidebar />
-      <main style={{ marginLeft: 'var(--sidebar-w)', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <main className="dashboard-main" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
         <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
           {/* Thread List */}
-          <div style={{ width: 280, borderRight: '1px solid var(--clr-border)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{
+            width: isMobile ? '100%' : 280,
+            borderRight: isMobile ? 'none' : '1px solid var(--clr-border)',
+            display: isMobile && showConversation ? 'none' : 'flex',
+            flexDirection: 'column',
+            height: '100%',
+          }}>
             <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--clr-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Messages</h2>
               <button className="btn btn-ghost btn-sm" onClick={() => setShowNewChat(true)} title="New Conversation">+</button>
@@ -148,7 +176,13 @@ const Messages = () => {
           </div>
 
           {/* Conversation Panel */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          <div style={{
+            flex: 1,
+            display: isMobile && !showConversation ? 'none' : 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden',
+          }}>
             {!activeThread ? (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--clr-text-muted)', flexDirection: 'column', gap: 12 }}>
                 <span style={{ fontSize: '2.5rem' }}>💬</span>
@@ -157,6 +191,13 @@ const Messages = () => {
             ) : (
               <>
                 <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {isMobile && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setShowConversation(false)}
+                      style={{ padding: '6px 10px', fontSize: '1rem' }}
+                    >←</button>
+                  )}
                   <div className="avatar-placeholder avatar-sm" style={{ width: 36, height: 36, fontSize: '0.875rem' }}>
                     {activeThread.partner.name?.[0]?.toUpperCase()}
                   </div>
@@ -194,20 +235,26 @@ const Messages = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <form onSubmit={handleSend} style={{ padding: '12px 20px', borderTop: '1px solid var(--clr-border)', display: 'flex', gap: 10 }}>
-                  <input
-                    type="text"
-                    className="form-input"
-                    style={{ flex: 1 }}
-                    placeholder={isInitiatorWaiting ? "Waiting for response..." : "Type a message..."}
-                    value={text}
-                    onChange={e => setText(e.target.value)}
-                    disabled={isInitiatorWaiting}
-                  />
-                  <button type="submit" className="btn btn-primary" disabled={sending || !text.trim() || isInitiatorWaiting}>
-                    {sending ? '...' : 'Send'}
-                  </button>
-                </form>
+                 {!isConnected ? (
+                  <div style={{ padding: '16px 80px 16px 20px', borderTop: '1px solid var(--clr-border)', background: 'var(--clr-bg-elevated)', color: 'var(--clr-text-muted)', textAlign: 'center', fontSize: '0.9rem', fontWeight: 500 }}>
+                    🔒 You can only message connections in your circle.
+                  </div>
+                ) : (
+                  <form onSubmit={handleSend} style={{ padding: '12px 80px 12px 20px', borderTop: '1px solid var(--clr-border)', display: 'flex', gap: 10 }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ flex: 1 }}
+                      placeholder={isInitiatorWaiting ? "Waiting for response..." : "Type a message..."}
+                      value={text}
+                      onChange={e => setText(e.target.value)}
+                      disabled={isInitiatorWaiting}
+                    />
+                    <button type="submit" className="btn btn-primary" disabled={sending || !text.trim() || isInitiatorWaiting}>
+                      {sending ? '...' : 'Send'}
+                    </button>
+                  </form>
+                )}
               </>
             )}
           </div>

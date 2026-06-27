@@ -132,7 +132,7 @@ const MyApplications = () => {
                   {!app.isWithdrawn && app.stage === 'Applied' && (
                     <button 
                       className="btn btn-sm btn-ghost" 
-                      style={{ color: 'var(--clr-danger)', padding: 0 }}
+                      style={{ color: 'var(--clr-danger)', padding: '8px 16px' }}
                       onClick={() => handleWithdraw(app._id)}
                     >
                       Withdraw Application

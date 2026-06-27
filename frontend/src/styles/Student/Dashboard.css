@@ -369,3 +369,63 @@
   color: var(--clr-text-muted);
 }
 
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+/* Tablet: student dashboard grid goes 1-col when narrow */
+@media (max-width: 960px) {
+  .student-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tablet: alumni dashboard two-col collapses */
+@media (max-width: 768px) {
+  .grid-2.dashboard-two-col {
+    grid-template-columns: 1fr;
+  }
+  .conn-user-pill {
+    flex-wrap: wrap;
+  }
+  .conn-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 6px;
+  }
+  .section-title {
+    font-size: 1rem;
+  }
+  .dash-stat-number {
+    font-size: 1.5rem;
+  }
+  /* Hub inner layouts */
+  .hub-body, .jobs-hub-body {
+    flex-direction: column;
+  }
+  .hub-inner-sidebar, .jobs-hub-inner-sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-height: unset;
+    border-right: none;
+    border-bottom: 1px solid var(--clr-border);
+  }
+}
+
+/* Phone */
+@media (max-width: 480px) {
+  .student-dashboard-grid {
+    gap: 14px;
+  }
+  .section-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .card-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card-row .badge {
+    align-self: flex-start;
+  }
+}

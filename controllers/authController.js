@@ -87,7 +87,7 @@ const sendOtp = async (req, res) => {
                 college: collegeId || null,
                 skills: skills || [],
                 department, bio,
-                ...(role === 'alumni' && { graduationYear, company, designation, industry, linkedin, idProof }),
+                ...(role === 'alumni' && { graduationYear, company, designation, industry, linkedin, idProof, profilePicture: idProof }),
                 ...(role === 'student' && { currentYear, gpa }),
             },
         });
@@ -238,7 +238,7 @@ const register = async (req, res) => {
             college: collegeId || null,
             skills: skills || [],
             department, bio,
-            ...(role === 'alumni' && { graduationYear, company, designation, industry, linkedin, idProof }),
+            ...(role === 'alumni' && { graduationYear, company, designation, industry, linkedin, idProof, profilePicture: idProof }),
             ...(role === 'student' && { currentYear, gpa }),
         });
 

@@ -48,10 +48,8 @@ Frontend runs on **http://localhost:5173** (Vite proxies `/api` → backend)
 | Forum | Community discussion boards with upvotes |
 | Success Stories | Alumni career journeys with likes |
 | Resume Manager | Upload base64 resumes, attach to applications |
-| AI Career Assistant | Rule-based career tips (no external API needed) |
 | Admin Dashboard | User verification queue + analytics |
 | Alumni Map | Geographic visualization of alumni |
-| Startup Showcase | Alumni founders + collaboration requests |
 
 ---
 

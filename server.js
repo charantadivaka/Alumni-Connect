@@ -142,11 +142,29 @@ io.on('connection', (socket) => {
     });
 
     // Private message (real-time delivery)
-    socket.on('send_message', ({ senderId, receiverId, text, senderName }) => {
-        const payload = { senderId, receiverId, text, senderName, timestamp: new Date().toISOString() };
-        const receiverSocketId = onlineUsers.get(receiverId);
-        if (receiverSocketId) io.to(receiverSocketId).emit('receive_message', payload);
-        socket.emit('message_sent', payload);
+    socket.on('send_message', async ({ senderId, receiverId, text, senderName }) => {
+        try {
+            const Connection = require('./models/Connection');
+            const connection = await Connection.findOne({
+                $or: [
+                    { sender: senderId, receiver: receiverId },
+                    { sender: receiverId, receiver: senderId }
+                ],
+                status: 'Accepted'
+            });
+
+            if (!connection) {
+                console.log(`[Socket] Blocked send_message from ${senderId} to ${receiverId} - not connected.`);
+                return;
+            }
+
+            const payload = { senderId, receiverId, text, senderName, timestamp: new Date().toISOString() };
+            const receiverSocketId = onlineUsers.get(receiverId);
+            if (receiverSocketId) io.to(receiverSocketId).emit('receive_message', payload);
+            socket.emit('message_sent', payload);
+        } catch (error) {
+            console.error('[Socket Error] send_message:', error);
+        }
     });
 
     // Typing indicators

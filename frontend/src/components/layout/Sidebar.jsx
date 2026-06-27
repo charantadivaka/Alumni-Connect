@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useEffect, useState } from 'react';
-import { notificationService } from '../../services/messageService';
+import { notificationService, messageService } from '../../services/messageService';
 import './Sidebar.css';
 
 /* ── Student top-level nav items ──────────────────────────────────────── */
@@ -33,21 +33,45 @@ const adminLinks = [
   { to: '/admin/analytics',     icon: '📊', label: 'Analytics' },
 ];
 
+const MOBILE_BREAKPOINT = 768;
+
 export const Sidebar = ({ defaultOpen = true }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [unread, setUnread] = useState(0);
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const links = user?.role === 'student' ? studentLinks
               : user?.role === 'alumni'  ? alumniLinks
               : adminLinks;
 
+  // Detect mobile screen size
   useEffect(() => {
-    notificationService.getAll().then(data => {
-      setUnread(data.filter(n => !n.isRead).length);
-    }).catch(() => {});
-  }, [location.pathname]);
+    const handleResize = () => {
+      const mobile = window.innerWidth <= MOBILE_BREAKPOINT;
+      setIsMobile(mobile);
+      if (!mobile) setMobileOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'student' || user.role === 'alumni') {
+      messageService.getThreads().then(threadsData => {
+        const count = threadsData.reduce((sum, t) => sum + (t.unreadCount || 0), 0);
+        setUnread(count);
+      }).catch(() => {});
+    }
+  }, [location.pathname, user]);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    if (isMobile) setMobileOpen(false);
+  }, [location.pathname, isMobile]);
 
   // Persist sidebar state in localStorage
   useEffect(() => {
@@ -55,7 +79,7 @@ export const Sidebar = ({ defaultOpen = true }) => {
     if (saved !== null) setIsOpen(saved === 'true');
   }, []);
 
-  const toggleSidebar = () => {
+  const toggleDesktop = () => {
     setIsOpen(prev => {
       localStorage.setItem('sidebarOpen', String(!prev));
       return !prev;
@@ -63,27 +87,50 @@ export const Sidebar = ({ defaultOpen = true }) => {
   };
 
   const sidebarW = isOpen ? '240px' : '64px';
+  // On mobile, sidebar is hidden off-screen so content takes full width
+  const effectiveSidebarW = isMobile ? '0px' : sidebarW;
+  const showLabel = isOpen || isMobile;
 
   return (
     <>
+      {/* Mobile FAB hamburger button */}
+      {isMobile && (
+        <button
+          className="sidebar-mobile-fab"
+          onClick={() => setMobileOpen(v => !v)}
+          title="Open menu"
+        >
+          <span className="hamburger-line" />
+          <span className="hamburger-line" />
+          <span className="hamburger-line" />
+        </button>
+      )}
+
+      {/* Mobile backdrop */}
+      {isMobile && mobileOpen && (
+        <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />
+      )}
+
       {/* Sidebar */}
       <aside
-        className="sidebar"
-        style={{ width: sidebarW }}
+        className={`sidebar${isMobile && mobileOpen ? ' sidebar--mobile-open' : ''}`}
+        style={isMobile ? undefined : { width: sidebarW }}
       >
-        {/* Header: hamburger + logo */}
+        {/* Header */}
         <div className="sidebar-header">
-          <button
-            onClick={toggleSidebar}
-            title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-            className="hamburger-btn"
-          >
-            <span className="hamburger-line" />
-            <span className="hamburger-line" style={{ opacity: isOpen ? 1 : 0.7 }} />
-            <span className="hamburger-line" />
-          </button>
+          {!isMobile && (
+            <button
+              onClick={toggleDesktop}
+              title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+              className="hamburger-btn"
+            >
+              <span className="hamburger-line" />
+              <span className="hamburger-line" style={{ opacity: isOpen ? 1 : 0.7 }} />
+              <span className="hamburger-line" />
+            </button>
+          )}
 
-          {isOpen && (
+          {showLabel && (
             <Link to="/" className="sidebar-logo">
               <span className="sidebar-logo-icon">🎓</span>
               <span className="sidebar-logo-text">AlumniConnect</span>
@@ -91,8 +138,8 @@ export const Sidebar = ({ defaultOpen = true }) => {
           )}
         </div>
 
-        {/* User profile pill */}
-        {isOpen && (
+        {/* User profile pill (open state) */}
+        {showLabel && (
           <Link
             to={user?.role === 'admin' ? '/admin/dashboard' : `/${user?.role}/profile`}
             className="sidebar-user-pill-link"
@@ -110,7 +157,7 @@ export const Sidebar = ({ defaultOpen = true }) => {
         )}
 
         {/* Collapsed: avatar only */}
-        {!isOpen && (
+        {!showLabel && (
           <Link
             to={user?.role === 'admin' ? '/admin/dashboard' : `/${user?.role}/profile`}
             className="sidebar-avatar-link"
@@ -129,21 +176,21 @@ export const Sidebar = ({ defaultOpen = true }) => {
               <Link
                 key={to}
                 to={to}
-                title={!isOpen ? label : ''}
+                title={!showLabel ? label : ''}
                 className={[
                   'sidebar-nav-link',
                   active ? 'sidebar-nav-link--active' : '',
-                  isOpen ? 'sidebar-nav-link--open' : 'sidebar-nav-link--collapsed',
+                  showLabel ? 'sidebar-nav-link--open' : 'sidebar-nav-link--collapsed',
                 ].join(' ')}
               >
                 <span className="sidebar-nav-icon">{icon}</span>
-                {isOpen && <span className="sidebar-nav-label">{label}</span>}
-                {label === 'Messages' && unread > 0 && isOpen && (
+                {showLabel && <span className="sidebar-nav-label">{label}</span>}
+                {label === 'Messages' && unread > 0 && showLabel && (
                   <span className="badge badge-primary sidebar-unread-badge">
                     {unread}
                   </span>
                 )}
-                {label === 'Messages' && unread > 0 && !isOpen && (
+                {label === 'Messages' && unread > 0 && !showLabel && (
                   <span className="sidebar-unread-dot" />
                 )}
               </Link>
@@ -156,16 +203,16 @@ export const Sidebar = ({ defaultOpen = true }) => {
           <button
             onClick={logout}
             title="Logout"
-            className={`sidebar-logout ${isOpen ? 'sidebar-logout--open' : 'sidebar-logout--collapsed'}`}
+            className={`sidebar-logout ${showLabel ? 'sidebar-logout--open' : 'sidebar-logout--collapsed'}`}
           >
             <span className="sidebar-logout-icon">🚪</span>
-            {isOpen && <span>Logout</span>}
+            {showLabel && <span>Logout</span>}
           </button>
         </div>
       </aside>
 
       {/* Main content offset via CSS variable */}
-      <style>{`:root { --sidebar-w: ${sidebarW}; }`}</style>
+      <style>{`:root { --sidebar-w: ${effectiveSidebarW}; }`}</style>
     </>
   );
 };

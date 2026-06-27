@@ -56,6 +56,15 @@ const getJobById = async (req, res) => {
 // @route POST /api/jobs
 const createJob = async (req, res) => {
     try {
+        if (req.user.role === 'alumni') {
+            if (!req.user.company) {
+                return res.status(400).json({ message: 'Please update your profile with your company name before posting jobs.' });
+            }
+            if (req.body.company && req.body.company.toLowerCase().trim() !== req.user.company.toLowerCase().trim()) {
+                return res.status(400).json({ message: `You can only post jobs for your company (${req.user.company}).` });
+            }
+        }
+
         const job = await Job.create({ ...req.body, postedBy: req.user._id });
         await invalidatePattern(JOB_CACHE_PATTERN); // clear cached job listings
         res.status(201).json(job);
@@ -73,6 +82,16 @@ const updateJob = async (req, res) => {
         if (job.postedBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Not authorized' });
         }
+
+        if (req.user.role === 'alumni' && req.body.company) {
+            if (!req.user.company) {
+                return res.status(400).json({ message: 'Please update your profile with your company name before updating jobs.' });
+            }
+            if (req.body.company.toLowerCase().trim() !== req.user.company.toLowerCase().trim()) {
+                return res.status(400).json({ message: `You can only post jobs for your company (${req.user.company}).` });
+            }
+        }
+
         const updated = await Job.findByIdAndUpdate(req.params.id, req.body, { new: true });
         await invalidatePattern(JOB_CACHE_PATTERN); // clear cached job listings
         res.json(updated);

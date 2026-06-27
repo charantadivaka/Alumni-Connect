@@ -5,6 +5,8 @@ import { messageService } from '../../services/messageService';
 import { connectionService } from '../../services/otherServices';
 import '../../styles/Student/Messages.css';
 
+const MOBILE_BREAKPOINT = 768;
+
 const Messages = () => {
   const { user } = useAuth();
   const [threads, setThreads]             = useState([]);
@@ -15,7 +17,15 @@ const Messages = () => {
   const [text, setText]                   = useState('');
   const [sending, setSending]             = useState(false);
   const [showContacts, setShowContacts]   = useState(false);
+  const [isMobile, setIsMobile]           = useState(window.innerWidth <= MOBILE_BREAKPOINT);
+  const [showConversation, setShowConversation] = useState(false);
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch threads + accepted connections (My Circle)
   useEffect(() => {
@@ -37,6 +47,7 @@ const Messages = () => {
     try {
       setLoadingMessages(true);
       setActiveThread({ partner: thread.partner, messages: [] });
+      if (isMobile) setShowConversation(true);
       const msgs = await messageService.getConversation(partnerId);
       setActiveThread({ partner: thread.partner, messages: msgs });
       await messageService.markRead(partnerId);
@@ -48,6 +59,7 @@ const Messages = () => {
   // Open a new chat from a connection
   const startChatWithConnection = async (person) => {
     setShowContacts(false);
+    if (isMobile) setShowConversation(true);
     try {
       setLoadingMessages(true);
       setActiveThread({ partner: person, messages: [] });
@@ -87,14 +99,25 @@ const Messages = () => {
   const threadPartnerIds = new Set(threads.map(t => t.partner._id));
   const newContactCandidates = circleMembers.filter(p => !threadPartnerIds.has(p._id));
 
+  const isConnected = !activeThread?.partner || connections.some(c => 
+    c.sender?._id === activeThread.partner._id || 
+    c.receiver?._id === activeThread.partner._id
+  );
+
   return (
     <div className="dashboard-layout">
       <Sidebar />
-      <main style={{ marginLeft: 'var(--sidebar-w)', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'margin-left 0.28s cubic-bezier(.4,0,.2,1)' }}>
+      <main className="dashboard-main" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
         <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
 
-          {/* Thread list panel */}
-          <div style={{ width: 280, borderRight: '1px solid var(--clr-border)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {/* Thread list panel — hidden on mobile when conversation is open */}
+          <div style={{
+            width: isMobile ? '100%' : 280,
+            borderRight: isMobile ? 'none' : '1px solid var(--clr-border)',
+            display: isMobile && showConversation ? 'none' : 'flex',
+            flexDirection: 'column',
+            height: '100%',
+          }}>
             <div style={{ padding: '18px 16px', borderBottom: '1px solid var(--clr-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0, fontSize: '1.05rem' }}>Messages</h2>
               <button
@@ -106,44 +129,46 @@ const Messages = () => {
               </button>
             </div>
 
-            {/* My Circle contacts picker */}
-            {showContacts && (
-              <div style={{ borderBottom: '1px solid var(--clr-border)', background: 'var(--clr-bg-elevated)', maxHeight: 220, overflowY: 'auto' }}>
-                <div style={{ padding: '8px 14px', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--clr-text-faint)', letterSpacing: 1 }}>
-                  My Circle
-                </div>
-                {circleMembers.length === 0 ? (
-                  <div style={{ padding: '10px 14px', fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
-                    No connections yet. Add people in Network.
-                  </div>
-                ) : circleMembers.map(person => (
-                  <div
-                    key={person._id}
-                    onClick={() => startChatWithConnection(person)}
-                    style={{
-                      padding: '10px 14px', cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center',
-                      borderBottom: '1px solid var(--clr-border)', transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-bg-card)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div className="avatar-placeholder avatar-sm" style={{ width: 32, height: 32, fontSize: '0.8rem', flexShrink: 0 }}>
-                      {person.name?.[0]?.toUpperCase()}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{person.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--clr-text-muted)', textTransform: 'capitalize' }}>{person.role}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Thread list */}
+            {/* Unified scrollable list for both Contacts Picker and Threads */}
             <div style={{ overflowY: 'auto', flex: 1 }}>
+              
+              {/* My Circle contacts picker */}
+              {showContacts && (
+                <div style={{ borderBottom: '1px solid var(--clr-border)', background: 'var(--clr-bg-elevated)' }}>
+                  <div style={{ padding: '8px 14px', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--clr-text-faint)', letterSpacing: 1 }}>
+                    My Circle
+                  </div>
+                  {circleMembers.length === 0 ? (
+                    <div style={{ padding: '10px 14px', fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
+                      No connections yet. Add people in Network.
+                    </div>
+                  ) : circleMembers.map(person => (
+                    <div
+                      key={person._id}
+                      onClick={() => startChatWithConnection(person)}
+                      style={{
+                        padding: '10px 14px', cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center',
+                        borderBottom: '1px solid var(--clr-border)', transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-bg-card)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div className="avatar-placeholder avatar-sm" style={{ width: 32, height: 32, fontSize: '0.8rem', flexShrink: 0 }}>
+                        {person.name?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{person.name}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--clr-text-muted)', textTransform: 'capitalize' }}>{person.role}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Thread list */}
               {loadingThreads ? (
                 <div style={{ padding: 24, textAlign: 'center' }}><span className="spinner" /></div>
-              ) : threads.length === 0 ? (
+              ) : threads.length === 0 && !showContacts ? (
                 <div style={{ padding: 24, textAlign: 'center', color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>
                   No conversations yet.<br /><br />
                   Click <strong>+ New</strong> to message someone from your circle.
@@ -177,8 +202,14 @@ const Messages = () => {
             </div>
           </div>
 
-          {/* Conversation panel */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          {/* Conversation panel — hidden on mobile when list is shown */}
+          <div style={{
+            flex: 1,
+            display: isMobile && !showConversation ? 'none' : 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden',
+          }}>
             {!activeThread ? (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--clr-text-muted)', flexDirection: 'column', gap: 12 }}>
                 <span style={{ fontSize: '2.5rem' }}>💬</span>
@@ -187,6 +218,13 @@ const Messages = () => {
             ) : (
               <>
                 <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {isMobile && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setShowConversation(false)}
+                      style={{ padding: '6px 10px', fontSize: '1rem' }}
+                    >←</button>
+                  )}
                   <div className="avatar-placeholder avatar-sm" style={{ width: 36, height: 36, fontSize: '0.875rem' }}>
                     {activeThread.partner.name?.[0]?.toUpperCase()}
                   </div>
@@ -222,16 +260,22 @@ const Messages = () => {
                   })}
                   <div ref={messagesEndRef} />
                 </div>
-                <form onSubmit={handleSend} style={{ padding: '12px 20px', borderTop: '1px solid var(--clr-border)', display: 'flex', gap: 10 }}>
-                  <input
-                    type="text" className="form-input" style={{ flex: 1 }}
-                    placeholder="Type a message…"
-                    value={text} onChange={e => setText(e.target.value)}
-                  />
-                  <button type="submit" className="btn btn-primary" disabled={sending || !text.trim()}>
-                    {sending ? '…' : 'Send'}
-                  </button>
-                </form>
+                 {!isConnected ? (
+                  <div style={{ padding: '16px 80px 16px 20px', borderTop: '1px solid var(--clr-border)', background: 'var(--clr-bg-elevated)', color: 'var(--clr-text-muted)', textAlign: 'center', fontSize: '0.9rem', fontWeight: 500 }}>
+                    🔒 You can only message connections in your circle.
+                  </div>
+                ) : (
+                  <form onSubmit={handleSend} style={{ padding: '12px 80px 12px 20px', borderTop: '1px solid var(--clr-border)', display: 'flex', gap: 10 }}>
+                    <input
+                      type="text" className="form-input" style={{ flex: 1 }}
+                      placeholder="Type a message…"
+                      value={text} onChange={e => setText(e.target.value)}
+                    />
+                    <button type="submit" className="btn btn-primary" disabled={sending || !text.trim()}>
+                      {sending ? '…' : 'Send'}
+                    </button>
+                  </form>
+                )}
               </>
             )}
           </div>

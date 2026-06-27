@@ -23,6 +23,7 @@ import JobsHub             from './pages/Student/JobsHub';
 import CommunityHub        from './pages/Student/CommunityHub';
 import StudentMessages     from './pages/Student/Messages';
 import SavedItems          from './pages/Student/SavedItems';
+import StudentPublicProfile from './pages/Student/StudentPublicProfile';
 
 // Alumni pages
 import AlumniDashboard        from './pages/Alumni/Dashboard';
@@ -109,6 +110,7 @@ const App = () => {
         <Route path="/student/community"  element={<RoleGuard role="student"><CommunityHub /></RoleGuard>} />
         <Route path="/student/messages"   element={<RoleGuard role="student"><StudentMessages /></RoleGuard>} />
         <Route path="/student/saved"      element={<RoleGuard role="student"><SavedItems /></RoleGuard>} />
+        <Route path="/student/student/:id" element={<RoleGuard role="student"><StudentPublicProfile /></RoleGuard>} />
 
         {/* Legacy redirects for old direct routes */}
         <Route path="/student/jobs"        element={<Navigate to="/student/jobs-hub" replace />} />
@@ -127,6 +129,7 @@ const App = () => {
         <Route path="/alumni/profile"      element={<RoleGuard role="alumni"><AlumniProfilePage /></RoleGuard>} />
         <Route path="/alumni/network"      element={<RoleGuard role="alumni"><Network /></RoleGuard>} />
         <Route path="/alumni/alumni/:id"   element={<RoleGuard role="alumni"><AlumniProfile /></RoleGuard>} />
+        <Route path="/alumni/student/:id"  element={<RoleGuard role="alumni"><StudentPublicProfile /></RoleGuard>} />
         <Route path="/alumni/jobs-hub"     element={<RoleGuard role="alumni"><AlumniJobsHub /></RoleGuard>} />
         <Route path="/alumni/jobs-hub/:section" element={<RoleGuard role="alumni"><AlumniJobsHub /></RoleGuard>} />
         <Route path="/alumni/community"    element={<RoleGuard role="alumni"><AlumniCommunityHub /></RoleGuard>} />

@@ -9,8 +9,9 @@ const replySchema = new mongoose.Schema({
 const forumSchema = new mongoose.Schema({
     title:    { type: String, required: true, trim: true },
     content:  { type: String, required: true },
-    category: { type: String, enum: ['Career', 'Technical', 'Campus', 'General', 'Interview Tips'], default: 'General' },
+    category: { type: String, enum: ['Career', 'Technical', 'Campus', 'General', 'Interview Tips', 'Campus Life', 'Opportunities', 'Other'], default: 'General' },
     author:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    college:  { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
     upvotes:  [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     replies:  [replySchema],
     isPinned: { type: Boolean, default: false },

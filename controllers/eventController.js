@@ -11,6 +11,16 @@ const getAllEvents = async (req, res) => {
         const { category } = req.query;
         const filter = { isActive: true };
         if (category) filter.category = category;
+
+        // Only show events from user's college (allow admins to see all, allow legacy events)
+        if (req.user && req.user.role !== 'admin' && req.user.college) {
+            filter.$or = [
+                { college: req.user.college },
+                { college: { $exists: false } },
+                { college: null }
+            ];
+        }
+
         const events = await Event.find(filter)
             .populate('createdBy', 'name profilePicture company')
             .sort({ date: 1 });
@@ -20,11 +30,30 @@ const getAllEvents = async (req, res) => {
     }
 };
 
-// @desc  Create event (alumni or admin)
+// @desc  Create event (student, alumni, or admin)
 // @route POST /api/events
 const createEvent = async (req, res) => {
     try {
-        const event = await Event.create({ ...req.body, createdBy: req.user._id });
+        // Category validation by role
+        if (req.user.role === 'student') {
+            if (!['Hackathon', 'Workshop'].includes(req.body.category)) {
+                return res.status(400).json({ 
+                    message: "Students can only create 'Hackathon' or 'Workshop' events." 
+                });
+            }
+        } else if (req.user.role === 'alumni') {
+            if (!['Webinar', 'Networking'].includes(req.body.category)) {
+                return res.status(400).json({ 
+                    message: "Alumni can only create 'Webinar' or 'Networking' events." 
+                });
+            }
+        }
+
+        const event = await Event.create({ 
+            ...req.body, 
+            createdBy: req.user._id,
+            college: req.user.college || null 
+        });
         res.status(201).json(event);
     } catch (err) {
         res.status(500).json({ message: err.message });
