@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { jobService, applicationService } from '../../services/jobService';
 import { bookmarkService } from '../../services/otherServices';
@@ -142,10 +143,12 @@ const JobBoard = () => {
     }
   };
 
+  const debouncedSearch = useDebounce(search, 300);
+
   const filteredJobs = jobs
     .filter(job => {
-      if (!search) return true;
-      const q = search.toLowerCase();
+      if (!debouncedSearch) return true;
+      const q = debouncedSearch.toLowerCase();
       return job.title?.toLowerCase().includes(q) || job.company?.toLowerCase().includes(q);
     })
     .sort((a, b) => {

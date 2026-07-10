@@ -1,6 +1,7 @@
 const JobApplication = require('../models/JobApplication');
 const Job = require('../models/Job');
 const sendNotification = require('../utils/sendNotification');
+const { sendJobApplicationEmail } = require('../utils/emailNotifications');
 
 let _io;
 const setIo = (io) => { _io = io; };
@@ -14,7 +15,7 @@ const applyJob = async (req, res) => {
             rollNo, name, branch, email, mobileNo, cgpa, majorProjects, cvFile, cvFileName
         } = req.body;
 
-        const job = await Job.findById(jobId);
+        const job = await Job.findById(jobId).populate('postedBy', 'name email');
         if (!job || !job.isActive) return res.status(404).json({ message: 'Job not found or closed' });
 
         const existing = await JobApplication.findOne({ job: jobId, applicant: req.user._id });
@@ -38,11 +39,13 @@ const applyJob = async (req, res) => {
         });
 
         await sendNotification(
-            _io, job.postedBy,
+            _io, job.postedBy._id,
             'job_application',
             `${req.user.name} applied for your job: ${job.title}`,
             `/alumni/applications/${job._id}`
         );
+
+        await sendJobApplicationEmail(job.postedBy.email, req.user.name, job.title);
 
         res.status(201).json(application);
     } catch (err) {

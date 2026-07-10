@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useDebounce } from '../../hooks/useDebounce';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { matchService } from '../../services/matchService';
 import { connectionService } from '../../services/otherServices';
@@ -29,11 +30,13 @@ const AlumniTab = () => {
   const [filters, setFilters]         = useState({ search: '', industry: '', availability: '', skill: '' });
   const [sortOption, setSortOption]   = useState('bestMatch');
 
-  const load = async () => {
+  const debouncedFilters = useDebounce(filters, 500);
+
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [result, conns] = await Promise.all([
-        matchService.getMatches(filters),
+        matchService.getMatches(debouncedFilters),
         connectionService.getMy(),
       ]);
       if (result && typeof result === 'object' && 'alumni' in result) {
@@ -49,9 +52,9 @@ const AlumniTab = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedFilters]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const maxRating = useMemo(() => {
     if (alumni.length === 0) return 0;
@@ -144,7 +147,6 @@ const AlumniTab = () => {
               <option value="recentlyJoined">Recently Joined</option>
             </select>
           </div>
-          <button className="btn btn-primary" onClick={load} style={{ marginBottom: 2 }}>Search</button>
         </div>
       )}
 
@@ -294,9 +296,11 @@ const StudentsTab = () => {
     }
   };
 
+  const debouncedSearch = useDebounce(search, 300);
+
   const filtered = students.filter(s => {
-    if (!search) return true;
-    const q = search.toLowerCase();
+    if (!debouncedSearch) return true;
+    const q = debouncedSearch.toLowerCase();
     return s.name?.toLowerCase().includes(q) || s.department?.toLowerCase().includes(q);
   });
 

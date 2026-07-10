@@ -1,5 +1,9 @@
 const Event = require('../models/Event');
 const sendNotification = require('../utils/sendNotification');
+const { invalidatePattern } = require('../config/redis');
+const { checkAndAwardBadges } = require('../utils/badgeService');
+
+const EVENT_CACHE_PATTERN = '__express__/api/events*';
 
 let _io;
 const setIo = (io) => { _io = io; };
@@ -21,9 +25,18 @@ const getAllEvents = async (req, res) => {
             ];
         }
 
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 20;
+        const skip = (page - 1) * limit;
+
+        const total = await Event.countDocuments(filter);
         const events = await Event.find(filter)
             .populate('createdBy', 'name profilePicture company')
-            .sort({ date: 1 });
+            .sort({ date: 1 })
+            .skip(skip)
+            .limit(limit);
+            
+        res.set('X-Total-Count', total);
         res.json(events);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -54,6 +67,9 @@ const createEvent = async (req, res) => {
             createdBy: req.user._id,
             college: req.user.college || null 
         });
+        await invalidatePattern(EVENT_CACHE_PATTERN);
+        // Award event_organizer badge (non-blocking)
+        checkAndAwardBadges(req.user._id.toString(), 'event_created').catch(() => {});
         res.status(201).json(event);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -73,6 +89,7 @@ const rsvpEvent = async (req, res) => {
             event.rsvps.push(req.user._id);
         }
         await event.save();
+        await invalidatePattern(EVENT_CACHE_PATTERN); // rsvp count changed
         res.json({ rsvped: !alreadyRsvp, count: event.rsvps.length });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -88,6 +105,7 @@ const deleteEvent = async (req, res) => {
         const isOwner = event.createdBy.toString() === req.user._id.toString();
         if (!isOwner && req.user.role !== 'admin') return res.status(403).json({ message: 'Not authorized' });
         await event.deleteOne();
+        await invalidatePattern(EVENT_CACHE_PATTERN); // event removed
         res.json({ message: 'Event deleted' });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -108,6 +126,7 @@ const reportEvent = async (req, res) => {
         
         event.reports.push(req.user._id);
         await event.save();
+        await invalidatePattern(EVENT_CACHE_PATTERN); // event reported
         res.json({ message: 'Event reported successfully' });
     } catch (err) {
         res.status(500).json({ message: err.message });

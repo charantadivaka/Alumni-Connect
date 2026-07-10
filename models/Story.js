@@ -13,4 +13,8 @@ const storySchema = new mongoose.Schema({
     isPublished: { type: Boolean, default: true },
 }, { timestamps: true });
 
+// Indexes for performance
+storySchema.index({ college: 1, isPublished: 1, createdAt: -1 });
+storySchema.index({ author: 1 });
+
 module.exports = mongoose.model('Story', storySchema);

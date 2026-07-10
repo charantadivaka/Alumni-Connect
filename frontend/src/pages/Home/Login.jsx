@@ -46,15 +46,15 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
-              <label className="form-label">Email</label>
-              <input className="form-input" type="email" name="email" placeholder="you@university.edu"
-                value={form.email} onChange={handleChange} required />
+              <label htmlFor="email" className="form-label">Email</label>
+              <input id="email" className="form-input" type="email" name="email" placeholder="you@university.edu"
+                value={form.email} onChange={handleChange} required aria-required="true" />
             </div>
             <div className="form-group">
-              <label className="form-label">Password</label>
+              <label htmlFor="password" className="form-label">Password</label>
               <div className="password-field">
-                <input className="form-input" type={showPassword ? 'text' : 'password'} name="password"
-                  placeholder="••••••••" value={form.password} onChange={handleChange} required />
+                <input id="password" className="form-input" type={showPassword ? 'text' : 'password'} name="password"
+                  placeholder="••••••••" value={form.password} onChange={handleChange} required aria-required="true" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}

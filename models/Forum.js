@@ -17,4 +17,9 @@ const forumSchema = new mongoose.Schema({
     isPinned: { type: Boolean, default: false },
 }, { timestamps: true });
 
+// Indexes for performance
+forumSchema.index({ college: 1, category: 1, createdAt: -1 });
+forumSchema.index({ author: 1 });
+forumSchema.index({ isPinned: -1, createdAt: -1 });
+
 module.exports = mongoose.model('Forum', forumSchema);

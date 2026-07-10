@@ -119,20 +119,20 @@ const StudentRegister = () => {
 
             {/* Name */}
             <div className="form-group">
-              <label className="form-label">Full Name</label>
-              <input className="form-input" placeholder="John Doe" required value={form.name} onChange={e => set('name', e.target.value)} />
+              <label htmlFor="name" className="form-label">Full Name</label>
+              <input id="name" className="form-input" placeholder="John Doe" required aria-required="true" value={form.name} onChange={e => set('name', e.target.value)} />
             </div>
 
             {/* College Selector */}
             <div className="form-group">
-              <label className="form-label">
+              <label htmlFor="college" className="form-label">
                 College{' '}
                 {colleges.length > 0 && <span className="roll-label-hint">(select to validate roll number)</span>}
               </label>
               {colleges.length === 0 ? (
-                <input className="form-input" placeholder="No colleges configured yet — ask admin" disabled style={{ opacity: 0.6 }} />
+                <input id="college" className="form-input" placeholder="No colleges configured yet — ask admin" disabled style={{ opacity: 0.6 }} />
               ) : (
-                <select className="form-input" value={form.college} onChange={handleCollegeChange}>
+                <select id="college" className="form-input" value={form.college} onChange={handleCollegeChange}>
                   <option value="">— Select your college (optional) —</option>
                   {colleges.map(c => (
                     <option key={c._id} value={c._id}>{c.name}</option>
@@ -143,7 +143,7 @@ const StudentRegister = () => {
 
             {/* College Roll Number */}
             <div className="form-group">
-              <label className="form-label">
+              <label htmlFor="collegeRollNumber" className="form-label">
                 College Roll No.
                 {selectedCollege && (
                   <span className="roll-label-hint">
@@ -152,9 +152,11 @@ const StudentRegister = () => {
                 )}
               </label>
               <input
+                id="collegeRollNumber"
                 className={`form-input ${rollBorderClass}`}
                 placeholder={selectedCollege ? selectedCollege.exampleFormat : '21CS001'}
                 required
+                aria-required="true"
                 value={form.collegeRollNumber}
                 onChange={e => set('collegeRollNumber', e.target.value)}
               />
@@ -171,15 +173,15 @@ const StudentRegister = () => {
 
             {/* Email */}
             <div className="form-group">
-              <label className="form-label">Email</label>
-              <input className="form-input" type="email" placeholder="you@college.edu" required value={form.email} onChange={e => set('email', e.target.value)} />
+              <label htmlFor="email" className="form-label">Email</label>
+              <input id="email" className="form-input" type="email" placeholder="you@college.edu" required aria-required="true" value={form.email} onChange={e => set('email', e.target.value)} />
             </div>
 
             {/* Password */}
             <div className="form-group">
-              <label className="form-label">Password</label>
+              <label htmlFor="password" className="form-label">Password</label>
               <div className="password-field">
-                <input className="form-input" type={showPassword ? 'text' : 'password'} placeholder="Min 6 characters" required minLength={6} value={form.password} onChange={e => set('password', e.target.value)} />
+                <input id="password" className="form-input" type={showPassword ? 'text' : 'password'} placeholder="Min 6 characters" required aria-required="true" minLength={6} value={form.password} onChange={e => set('password', e.target.value)} />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}

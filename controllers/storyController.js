@@ -1,4 +1,8 @@
 const Story = require('../models/Story');
+const { invalidatePattern } = require('../config/redis');
+const { checkAndAwardBadges } = require('../utils/badgeService');
+
+const STORY_CACHE_PATTERN = '__express__/api/stories*';
 
 // @desc  Get all published stories
 // @route GET /api/stories
@@ -15,9 +19,18 @@ const getStories = async (req, res) => {
             ];
         }
 
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 20;
+        const skip = (page - 1) * limit;
+
+        const total = await Story.countDocuments(filter);
         const stories = await Story.find(filter)
             .populate('author', 'name profilePicture company designation graduationYear')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+            
+        res.set('X-Total-Count', total);
         res.json(stories);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -44,6 +57,9 @@ const createStory = async (req, res) => {
             author: req.user._id,
             college: req.user.college || null
         });
+        await invalidatePattern(STORY_CACHE_PATTERN);
+        // Award story_author badge (non-blocking)
+        checkAndAwardBadges(req.user._id.toString(), 'story_created').catch(() => {});
         res.status(201).json(story);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -60,6 +76,7 @@ const likeStory = async (req, res) => {
         if (idx === -1) story.likes.push(req.user._id);
         else story.likes.splice(idx, 1);
         await story.save();
+        await invalidatePattern(STORY_CACHE_PATTERN); // like count changed
         res.json({ likes: story.likes.length, liked: idx === -1 });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -76,6 +93,7 @@ const deleteStory = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized' });
         }
         await story.deleteOne();
+        await invalidatePattern(STORY_CACHE_PATTERN); // story removed
         res.json({ message: 'Story deleted' });
     } catch (err) {
         res.status(500).json({ message: err.message });

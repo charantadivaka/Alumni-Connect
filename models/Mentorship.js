@@ -18,4 +18,8 @@ const mentorshipSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
+// Indexes for performance
+mentorshipSchema.index({ student: 1, status: 1 });
+mentorshipSchema.index({ alumni: 1, status: 1 });
+
 module.exports = mongoose.model('Mentorship', mentorshipSchema);

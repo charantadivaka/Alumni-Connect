@@ -94,6 +94,8 @@ const invalidatePattern = async (pattern) => {
 };
 
 // ── Cache middleware for GET responses ────────────────────────────────────────
+// Caches the JSON body AND any pagination headers (X-Total-Count, X-Total-Pages)
+// together so that cache hits return the same response as a fresh DB query.
 const cacheMiddleware = (durationInSeconds) => {
     return async (req, res, next) => {
         if (req.method !== 'GET') return next();
@@ -103,13 +105,27 @@ const cacheMiddleware = (durationInSeconds) => {
         try {
             const cached = await redisClient.get(key);
             if (cached) {
-                return res.json(JSON.parse(cached));
+                const { body, headers } = JSON.parse(cached);
+                // Restore pagination headers that controllers may have set
+                if (headers) {
+                    Object.entries(headers).forEach(([h, v]) => res.set(h, v));
+                }
+                return res.json(body);
             }
 
             const originalJson = res.json.bind(res);
             res.json = (body) => {
                 if (res.statusCode >= 200 && res.statusCode < 300) {
-                    redisClient.setex(key, durationInSeconds, JSON.stringify(body)).catch(() => {});
+                    // Capture pagination headers before they are flushed
+                    const headers = {};
+                    const totalCount = res.getHeader('X-Total-Count');
+                    const totalPages = res.getHeader('X-Total-Pages');
+                    if (totalCount !== undefined) headers['X-Total-Count'] = totalCount;
+                    if (totalPages !== undefined) headers['X-Total-Pages'] = totalPages;
+
+                    redisClient
+                        .setex(key, durationInSeconds, JSON.stringify({ body, headers }))
+                        .catch(() => {});
                 }
                 return originalJson(body);
             };

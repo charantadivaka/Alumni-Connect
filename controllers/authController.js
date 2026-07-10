@@ -1,23 +1,27 @@
+const crypto = require('crypto');
 const User = require('../models/User');
 const College = require('../models/College');
+const PasswordReset = require('../models/PasswordReset');
 const generateToken = require('../utils/generateToken');
-const { sendOtpEmail } = require('../utils/emailService');
+const { sendOtpEmail, sendPasswordResetEmail } = require('../utils/emailService');
 
-// ── In-memory OTP store ───────────────────────────────────────────────────────
-// Structure: Map<email, { otp, expiresAt, name, userData }>
-// We store the full user payload here temporarily; the user record is only
-// created AFTER successful OTP verification.
+// ── Redis client (optional — gracefully falls back to in-memory) ──────────────
+let redisClient = null;
+try {
+    const { getRedisClient } = require('../config/redis');
+    redisClient = getRedisClient();
+} catch {
+    /* Redis not available — fall back to in-memory Map */
+}
+
+// ── In-memory OTP store (fallback when Redis is unavailable) ──────────────────
 const otpStore = new Map();
-
-const OTP_TTL_MS  = 10 * 60 * 1000; // 10 minutes
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 /** Generate a cryptographically safe 6-digit OTP */
-const generateOtp = () => {
-    const crypto = require('crypto');
-    return String(crypto.randomInt(100000, 999999));
-};
+const generateOtp = () => String(crypto.randomInt(100000, 999999));
 
-/** Clean up expired OTPs from memory (called on each new OTP request) */
+/** Clean up expired OTPs from in-memory store */
 const purgeExpiredOtps = () => {
     const now = Date.now();
     for (const [key, val] of otpStore.entries()) {
@@ -25,7 +29,44 @@ const purgeExpiredOtps = () => {
     }
 };
 
-// @desc  Step 1 of registration — validate fields, save user, send OTP
+/** Store OTP record — prefers Redis, falls back to in-memory Map */
+const storeOtp = async (email, record) => {
+    if (redisClient && !redisClient.isDummy) {
+        await redisClient.setex(`otp:${email}`, 600, JSON.stringify(record)); // 10 min TTL
+    } else {
+        otpStore.set(email, { ...record, expiresAt: Date.now() + OTP_TTL_MS });
+    }
+};
+
+/** Retrieve OTP record — prefers Redis, falls back to in-memory Map */
+const getOtp = async (email) => {
+    if (redisClient && !redisClient.isDummy) {
+        const raw = await redisClient.get(`otp:${email}`);
+        return raw ? JSON.parse(raw) : null;
+    }
+    return otpStore.get(email) || null;
+};
+
+/** Delete OTP record after use */
+const deleteOtp = async (email) => {
+    if (redisClient && !redisClient.isDummy) {
+        await redisClient.del(`otp:${email}`);
+    } else {
+        otpStore.delete(email);
+    }
+};
+
+/** Update OTP record (for resend) */
+const updateOtp = async (email, newOtp) => {
+    const record = await getOtp(email);
+    if (!record) return false;
+    record.otp = newOtp;
+    record.expiresAt = Date.now() + OTP_TTL_MS;
+    await storeOtp(email, record);
+    return record;
+};
+
+// @desc  Step 1 of registration — validate fields, send OTP
 // @route POST /api/auth/send-otp
 const sendOtp = async (req, res) => {
     try {
@@ -45,13 +86,11 @@ const sendOtp = async (req, res) => {
             return res.status(400).json({ message: 'Role must be student or alumni' });
         }
 
-        // Check if email is already a registered user
         const existingEmail = await User.findOne({ email });
         if (existingEmail) {
             return res.status(400).json({ message: 'Email already registered' });
         }
 
-        // Check roll number uniqueness
         if (collegeRollNumber) {
             const existingRoll = await User.findOne({ collegeRollNumber });
             if (existingRoll) {
@@ -59,7 +98,6 @@ const sendOtp = async (req, res) => {
             }
         }
 
-        // Roll number pattern validation
         if (collegeId && collegeRollNumber) {
             const collegeDoc = await College.findById(collegeId);
             if (!collegeDoc) {
@@ -77,11 +115,9 @@ const sendOtp = async (req, res) => {
             }
         }
 
-        // Generate OTP and store pending registration data
         const otp = generateOtp();
-        otpStore.set(email, {
+        await storeOtp(email, {
             otp,
-            expiresAt: Date.now() + OTP_TTL_MS,
             userData: {
                 name, email, password, role, collegeRollNumber,
                 college: collegeId || null,
@@ -92,12 +128,11 @@ const sendOtp = async (req, res) => {
             },
         });
 
-        // Send OTP email
         await sendOtpEmail(email, otp, name);
 
         res.status(200).json({
             message: 'OTP sent successfully',
-            email, // echo back so frontend can use it
+            email,
         });
     } catch (err) {
         console.error('sendOtp error:', err);
@@ -115,14 +150,15 @@ const verifyOtp = async (req, res) => {
             return res.status(400).json({ message: 'Email and OTP are required' });
         }
 
-        const record = otpStore.get(email);
+        const record = await getOtp(email);
 
         if (!record) {
             return res.status(400).json({ message: 'No OTP found for this email. Please register again.' });
         }
 
-        if (Date.now() > record.expiresAt) {
-            otpStore.delete(email);
+        // In-memory fallback: check expiry manually
+        if (record.expiresAt && Date.now() > record.expiresAt) {
+            await deleteOtp(email);
             return res.status(400).json({ message: 'OTP has expired. Please register again.' });
         }
 
@@ -130,20 +166,15 @@ const verifyOtp = async (req, res) => {
             return res.status(400).json({ message: 'Incorrect OTP. Please try again.' });
         }
 
-        // OTP verified — create the user now
         const { userData } = record;
-        otpStore.delete(email); // clean up
+        await deleteOtp(email);
 
-        // Double-check that nobody else registered with the same email in the meantime
         const existingEmail = await User.findOne({ email: userData.email });
         if (existingEmail) {
             return res.status(400).json({ message: 'Email already registered' });
         }
 
-        const user = await User.create({
-            ...userData,
-            isEmailVerified: true,
-        });
+        const user = await User.create({ ...userData, isEmailVerified: true });
 
         generateToken(res, user._id);
 
@@ -166,27 +197,23 @@ const verifyOtp = async (req, res) => {
     }
 };
 
-// @desc  Resend OTP (re-generates and re-sends without re-validating form)
+// @desc  Resend OTP
 // @route POST /api/auth/resend-otp
 const resendOtp = async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) return res.status(400).json({ message: 'Email is required' });
 
-        const record = otpStore.get(email);
-        if (!record) {
+        const otp = generateOtp();
+        const updated = await updateOtp(email, otp);
+
+        if (!updated) {
             return res.status(400).json({
                 message: 'Session expired. Please go back and fill the registration form again.',
             });
         }
 
-        // Generate fresh OTP and update TTL
-        const otp = generateOtp();
-        record.otp = otp;
-        record.expiresAt = Date.now() + OTP_TTL_MS;
-        otpStore.set(email, record);
-
-        await sendOtpEmail(email, otp, record.userData.name);
+        await sendOtpEmail(email, otp, updated.userData?.name || 'there');
 
         res.status(200).json({ message: 'New OTP sent successfully' });
     } catch (err) {
@@ -215,7 +242,6 @@ const register = async (req, res) => {
         const existingRoll = await User.findOne({ collegeRollNumber });
         if (existingRoll) return res.status(400).json({ message: 'Roll number already registered' });
 
-        // ── Roll number pattern validation ────────────────────────────────────
         if (collegeId) {
             const collegeDoc = await College.findById(collegeId);
             if (!collegeDoc) {
@@ -229,7 +255,7 @@ const register = async (req, res) => {
                     });
                 }
             } catch {
-                console.error(`[College ${collegeDoc._id}] Malformed rollNumberPattern: ${collegeDoc.rollNumberPattern}`);
+                console.error(`[College ${collegeId}] Malformed rollNumberPattern`);
             }
         }
 
@@ -324,26 +350,114 @@ const changePassword = async (req, res) => {
     }
 };
 
+// @desc  Forgot password — send reset link
+// @route POST /api/auth/forgot-password
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ message: 'Email is required' });
+
+        const user = await User.findOne({ email });
+
+        // Always return success to prevent email enumeration attacks
+        if (!user) {
+            return res.json({ message: 'If that email exists, a reset link has been sent.' });
+        }
+
+        // Generate a cryptographically secure token
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+        // Delete any existing reset tokens for this user
+        await PasswordReset.deleteMany({ userId: user._id });
+
+        // Store hashed token (expires in 15 minutes)
+        await PasswordReset.create({
+            userId: user._id,
+            tokenHash,
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+        });
+
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const resetLink = `${clientUrl}/reset-password?token=${rawToken}`;
+
+        await sendPasswordResetEmail(user.email, resetLink, user.name);
+
+        res.json({ message: 'If that email exists, a reset link has been sent.' });
+    } catch (err) {
+        console.error('forgotPassword error:', err);
+        res.status(500).json({ message: 'Failed to process request. Please try again.' });
+    }
+};
+
+// @desc  Reset password using token from email
+// @route POST /api/auth/reset-password
+const resetPassword = async (req, res) => {
+    try {
+        const { token, password } = req.body;
+        if (!token || !password) {
+            return res.status(400).json({ message: 'Token and new password are required' });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters' });
+        }
+
+        // Hash the incoming token and look it up
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        const resetRecord = await PasswordReset.findOne({
+            tokenHash,
+            expiresAt: { $gt: new Date() },
+        });
+
+        if (!resetRecord) {
+            return res.status(400).json({ message: 'Invalid or expired reset link. Please request a new one.' });
+        }
+
+        const user = await User.findById(resetRecord.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Set new password and clean up
+        user.password = password;
+        await user.save();
+        await PasswordReset.deleteMany({ userId: user._id });
+
+        res.json({ message: 'Password reset successfully. You can now log in.' });
+    } catch (err) {
+        console.error('resetPassword error:', err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
 // @desc  Admin login
 // @route POST /api/auth/admin-login
 const adminLogin = async (req, res) => {
     try {
         const { username, password } = req.body;
-        if (username !== 'Admin' || password !== 'Admin@123') {
+
+        // Read credentials from environment variables (never hardcode)
+        const adminUsername = process.env.ADMIN_USERNAME || 'Admin';
+        const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
+
+        if (username !== adminUsername || password !== adminPassword) {
             return res.status(401).json({ message: 'Invalid Admin credentials' });
         }
 
-        let admin = await User.findOne({ email: 'admin@college.edu' });
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@college.edu';
+
+        let admin = await User.findOne({ email: adminEmail });
         if (!admin) {
             admin = await User.create({
                 name: 'System Admin',
-                email: 'admin@college.edu',
-                password: 'Admin@123',
+                email: adminEmail,
+                password: adminPassword,
                 role: 'admin',
-                collegeRollNumber: 'ADMIN001'
+                collegeRollNumber: 'ADMIN001',
             });
         }
-        
+
         generateToken(res, admin._id);
 
         res.json({
@@ -354,6 +468,8 @@ const adminLogin = async (req, res) => {
     }
 };
 
-
-
-module.exports = { register, login, logout, getMe, changePassword, adminLogin, sendOtp, verifyOtp, resendOtp };
+module.exports = {
+    register, login, logout, getMe, changePassword, adminLogin,
+    sendOtp, verifyOtp, resendOtp,
+    forgotPassword, resetPassword,
+};

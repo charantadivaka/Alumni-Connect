@@ -1,5 +1,8 @@
 const User    = require('../models/User');
 const College = require('../models/College');
+const { invalidatePattern } = require('../config/redis');
+
+const MATCH_CACHE_PATTERN = '__express__/api/match*';
 
 // @desc  Get own profile
 // @route GET /api/profile
@@ -72,6 +75,7 @@ const updateProfile = async (req, res) => {
             .populate('college', 'name rollNumberPattern exampleFormat patternDescription')
             .select('-password');
 
+        await invalidatePattern(MATCH_CACHE_PATTERN); // profile changed — update directory/match results
         res.json(user);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -104,6 +108,7 @@ const uploadPicture = async (req, res) => {
             { new: true }
         ).select('-password');
 
+        await invalidatePattern(MATCH_CACHE_PATTERN); // profile picture changed
         res.json({ profilePicture: user.profilePicture });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -145,6 +150,8 @@ const deleteAccount = async (req, res) => {
         ]);
 
         await User.findByIdAndDelete(userId);
+
+        await invalidatePattern(MATCH_CACHE_PATTERN); // user deleted — remove from directory
 
         // Clear auth cookie
         res.cookie('jwt', '', { httpOnly: true, expires: new Date(0) });

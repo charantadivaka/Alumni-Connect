@@ -1,4 +1,5 @@
 const Forum = require('../models/Forum');
+const { checkAndAwardBadges } = require('../utils/badgeService');
 
 // @desc  Get all threads (with optional category filter)
 // @route GET /api/forums
@@ -16,9 +17,18 @@ const getThreads = async (req, res) => {
             ];
         }
 
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 50;
+        const skip = (page - 1) * limit;
+
+        const total = await Forum.countDocuments(filter);
         const threads = await Forum.find(filter)
             .populate('author', 'name profilePicture role company')
-            .sort({ isPinned: -1, createdAt: -1 });
+            .sort({ isPinned: -1, createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+            
+        res.set('X-Total-Count', total);
         res.json(threads);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -88,6 +98,8 @@ const createThread = async (req, res) => {
             author: req.user._id,
             college: req.user.college || null
         });
+        // Check active_contributor badge (non-blocking)
+        checkAndAwardBadges(req.user._id.toString(), 'thread_created').catch(() => {});
         res.status(201).json(thread);
     } catch (err) {
         res.status(500).json({ message: err.message });

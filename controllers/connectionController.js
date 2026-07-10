@@ -1,5 +1,6 @@
 const Connection = require('../models/Connection');
 const User = require('../models/User');
+const sendNotification = require('../utils/sendNotification');
 
 let ioInstance;
 exports.setIo = (io) => { ioInstance = io; };
@@ -21,7 +22,15 @@ exports.sendRequest = async (req, res, next) => {
         }
 
         const connection = await Connection.create({ sender: senderId, receiver: receiverId });
-        
+
+        // Notify the receiver about the new connection request
+        await sendNotification(
+            ioInstance, receiverId,
+            'connection_request',
+            `${req.user.name} sent you a connection request`,
+            '/student/circle'
+        );
+
         res.status(201).json({ message: "Connection request sent.", connection });
     } catch (error) {
         if (error.code === 11000) return res.status(400).json({ message: "Request already exists." });
@@ -39,7 +48,7 @@ exports.getMyConnections = async (req, res, next) => {
         })
             .populate('sender',   'name role company designation profilePicture bio skills department year rollNo graduationYear')
             .populate('receiver', 'name role company designation profilePicture bio skills department year rollNo graduationYear');
-        
+
         res.json(connections);
     } catch (error) {
         next(error);
@@ -64,6 +73,16 @@ exports.respondRequest = async (req, res, next) => {
 
         connection.status = status;
         await connection.save();
+
+        // Notify the original sender of the decision
+        if (status === 'Accepted') {
+            await sendNotification(
+                ioInstance, connection.sender,
+                'connection_accepted',
+                `${req.user.name} accepted your connection request`,
+                '/student/circle'
+            );
+        }
 
         res.json({ message: `Connection ${status.toLowerCase()}`, connection });
     } catch (error) {

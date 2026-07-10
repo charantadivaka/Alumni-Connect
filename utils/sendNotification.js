@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const { invalidatePattern } = require('../config/redis');
 
 /**
  * Create a notification and emit it via Socket.io
@@ -16,10 +17,11 @@ const sendNotification = async (io, userId, type, message, link = '') => {
             message,
             link,
         });
-        // Emit to user's socket room if they're online
-        if (io) {
-            io.to(userId.toString()).emit('new_notification', notification);
-        }
+        // Emit real-time socket event if receiver is online
+        io.to(userId.toString()).emit('new_notification', notification);
+
+        // Invalidate Redis cache for this user's notifications
+        await invalidatePattern(`__express__/api/notifications*`).catch(() => {});
     } catch (err) {
         console.error('Notification error:', err.message);
     }

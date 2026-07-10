@@ -1,5 +1,6 @@
 const Referral = require('../models/Referral');
 const sendNotification = require('../utils/sendNotification');
+const { checkAndAwardBadges } = require('../utils/badgeService');
 
 let _io;
 const setIo = (io) => { _io = io; };
@@ -65,6 +66,11 @@ const respondReferral = async (req, res) => {
         referral.status = status;
         referral.alumniNote = alumniNote || '';
         await referral.save();
+
+        // Award job_helper badge if referral submitted (non-blocking)
+        if (status === 'Submitted') {
+            checkAndAwardBadges(req.user._id.toString(), 'referral_submitted').catch(() => {});
+        }
 
         await sendNotification(_io, referral.student, 'referral_update',
             `Your referral request for ${referral.jobTitle} at ${referral.company} is now: ${status}`,

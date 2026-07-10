@@ -116,4 +116,122 @@ const sendOtpEmail = async (toEmail, otp, name = 'there') => {
     return info;
 };
 
-module.exports = { sendOtpEmail };
+/**
+ * Sends a password reset email.
+ * @param {string} toEmail    Recipient email
+ * @param {string} resetLink  Full URL with reset token
+ * @param {string} name       Recipient's name
+ */
+const sendPasswordResetEmail = async (toEmail, resetLink, name = 'there') => {
+    const transporter = await createTransporter();
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Reset Your Password — AlumniConnect</title>
+  <style>
+    body { margin:0; padding:0; background:#0f172a; font-family:'Segoe UI',Arial,sans-serif; }
+    .wrapper { max-width:520px; margin:40px auto; background:#1e293b; border-radius:16px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.4); }
+    .header { background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%); padding:36px 40px 28px; text-align:center; }
+    .header h1 { margin:0; color:#fff; font-size:26px; font-weight:700; letter-spacing:-0.5px; }
+    .header p  { margin:6px 0 0; color:rgba(255,255,255,0.8); font-size:14px; }
+    .body { padding:36px 40px; }
+    .greeting { color:#e2e8f0; font-size:16px; margin-bottom:20px; }
+    .btn { display:block; width:fit-content; margin:24px auto; padding:14px 36px;
+           background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; font-size:16px;
+           font-weight:600; border-radius:10px; text-decoration:none; text-align:center; }
+    .info { background:#0f172a; border-radius:10px; padding:14px 18px; margin-bottom:24px; }
+    .info p { margin:0 0 6px; color:#94a3b8; font-size:13px; line-height:1.6; }
+    .divider { border:none; border-top:1px solid #334155; margin:24px 0; }
+    .footer { color:#64748b; font-size:12px; text-align:center; line-height:1.6; padding-bottom:4px; }
+    .link-text { color:#a5b4fc; word-break:break-all; font-size:12px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>🎓 AlumniConnect</h1>
+      <p>Password Reset Request</p>
+    </div>
+    <div class="body">
+      <p class="greeting">Hi <strong style="color:#a5b4fc">${name}</strong>,</p>
+      <p style="color:#94a3b8;font-size:14px;margin-bottom:24px;">
+        We received a request to reset your password. Click the button below to set a new one.
+        This link expires in <strong style="color:#e2e8f0">15 minutes</strong>.
+      </p>
+      <a href="${resetLink}" class="btn">Reset My Password</a>
+      <div class="info">
+        <p>⏱ <strong style="color:#c7d2fe">Expires in 15 minutes</strong></p>
+        <p>🔒 If you didn't request this, you can safely ignore this email.</p>
+        <p>🔗 Or copy this link: <span class="link-text">${resetLink}</span></p>
+      </div>
+      <hr class="divider"/>
+      <p class="footer">
+        © ${new Date().getFullYear()} AlumniConnect · Sent to ${toEmail}<br/>
+        This is an automated message — please do not reply.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const info = await transporter.sendMail({
+        from:    `"AlumniConnect" <${process.env.SMTP_USER || 'noreply@alumniconnect.dev'}>`,
+        to:      toEmail,
+        subject: 'Reset Your AlumniConnect Password',
+        html,
+    });
+
+    if (transporter._isEthereal) {
+        console.log(`📧 [Dev] Reset email preview: ${nodemailer.getTestMessageUrl(info)}`);
+    }
+
+    return info;
+};
+
+/**
+ * Sends an email when a mentorship session is accepted.
+ */
+const sendMentorshipAcceptedEmail = async (studentEmail, studentName, alumniName, topic) => {
+    if (!process.env.SMTP_USER) return; // only fire if SMTP is configured
+    try {
+        const transporter = await createTransporter();
+        await transporter.sendMail({
+            from:    `"AlumniConnect" <${process.env.SMTP_USER}>`,
+            to:      studentEmail,
+            subject: `Your mentorship session with ${alumniName} is confirmed!`,
+            html: `<p>Hi ${studentName},</p>
+                   <p><strong>${alumniName}</strong> has accepted your mentorship request for <em>"${topic}"</em>.</p>
+                   <p>Log in to AlumniConnect to view session details and connect.</p>
+                   <p>Best,<br/>The AlumniConnect Team</p>`,
+        });
+    } catch (err) {
+        console.error('[Email] sendMentorshipAcceptedEmail failed:', err.message);
+    }
+};
+
+/**
+ * Sends an email to alumni when a student applies for their job.
+ */
+const sendJobApplicationEmail = async (alumniEmail, alumniName, studentName, jobTitle) => {
+    if (!process.env.SMTP_USER) return; // only fire if SMTP is configured
+    try {
+        const transporter = await createTransporter();
+        await transporter.sendMail({
+            from:    `"AlumniConnect" <${process.env.SMTP_USER}>`,
+            to:      alumniEmail,
+            subject: `New application for "${jobTitle}"`,
+            html: `<p>Hi ${alumniName},</p>
+                   <p><strong>${studentName}</strong> has applied for your job posting: <em>"${jobTitle}"</em>.</p>
+                   <p>Log in to AlumniConnect to review their application.</p>
+                   <p>Best,<br/>The AlumniConnect Team</p>`,
+        });
+    } catch (err) {
+        console.error('[Email] sendJobApplicationEmail failed:', err.message);
+    }
+};
+
+module.exports = { sendOtpEmail, sendPasswordResetEmail, sendMentorshipAcceptedEmail, sendJobApplicationEmail };

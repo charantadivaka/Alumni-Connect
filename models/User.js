@@ -77,6 +77,5 @@ userSchema.methods.comparePassword = async function (candidate) {
 // Indexes for performance
 userSchema.index({ role: 1, college: 1 });
 userSchema.index({ industry: 1 });
-userSchema.index({ collegeRollNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model('User', userSchema);

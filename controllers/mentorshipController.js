@@ -1,6 +1,9 @@
 const Mentorship = require('../models/Mentorship');
 const MentorSlot = require('../models/MentorSlot');
+const User = require('../models/User');
 const sendNotification = require('../utils/sendNotification');
+const { checkAndAwardBadges } = require('../utils/badgeService');
+const { sendMentorshipAcceptedEmail } = require('../utils/emailNotifications');
 
 let _io;
 const setIo = (io) => { _io = io; };
@@ -62,19 +65,30 @@ const respondSession = async (req, res) => {
             return res.status(400).json({ message: 'Status must be Accepted or Rejected' });
         }
 
-        const session = await Mentorship.findById(req.params.id);
+        const session = await Mentorship.findById(req.params.id)
+            .populate('student', 'name email')
+            .populate('alumni', 'name');
         if (!session) return res.status(404).json({ message: 'Session not found' });
-        if (session.alumni.toString() !== req.user._id.toString()) {
+        if (session.alumni._id.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
         session.status = status;
         await session.save();
 
-        await sendNotification(_io, session.student, 'mentorship_response',
-            `Your mentorship request was ${status.toLowerCase()} by alumni`,
+        await sendNotification(_io, session.student._id, 'mentorship_response',
+            `Your mentorship request was ${status.toLowerCase()} by ${session.alumni.name}`,
             '/student/mentorship'
         );
+
+        // Fire email notification if SMTP is configured
+        if (status === 'Accepted') {
+            await sendMentorshipAcceptedEmail(
+                session.student.email,
+                session.alumni.name,
+                session.topic
+            );
+        }
 
         res.json(session);
     } catch (err) {
@@ -95,6 +109,14 @@ const completeSession = async (req, res) => {
         session.status = 'Completed';
         session.sessionNotes = sessionNotes || '';
         await session.save();
+
+        // Update alumni mentorshipsCount & studentsHelped
+        await User.findByIdAndUpdate(session.alumni, {
+            $inc: { mentorshipsCount: 1, studentsHelped: 1 },
+        });
+
+        // Check and award top_mentor badge
+        await checkAndAwardBadges(session.alumni.toString(), 'mentorship_complete');
 
         await sendNotification(_io, session.student, 'mentorship_complete',
             'Your mentorship session has been marked complete. Please leave feedback!',
@@ -119,6 +141,18 @@ const submitFeedback = async (req, res) => {
         }
         session.studentFeedback = { rating, comment };
         await session.save();
+
+        // Recalculate and update alumni's average rating
+        const allFeedback = await Mentorship.find({
+            alumni: session.alumni,
+            'studentFeedback.rating': { $exists: true, $ne: null },
+        }).select('studentFeedback.rating');
+
+        if (allFeedback.length > 0) {
+            const avg = allFeedback.reduce((sum, s) => sum + s.studentFeedback.rating, 0) / allFeedback.length;
+            await User.findByIdAndUpdate(session.alumni, { rating: Math.round(avg * 10) / 10 });
+        }
+
         res.json(session);
     } catch (err) {
         res.status(500).json({ message: err.message });

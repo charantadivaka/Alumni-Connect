@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { forumService } from '../../services/eventService';
@@ -14,6 +15,8 @@ const Forum = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterCat, setFilterCat] = useState('');
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
 
   // New Thread Form
   const [showForm, setShowForm] = useState(false);
@@ -111,6 +114,15 @@ const Forum = () => {
     }
   };
 
+  const filteredThreads = useMemo(() => {
+    if (!debouncedSearch) return threads;
+    const q = debouncedSearch.toLowerCase();
+    return threads.filter(t => 
+      t.title?.toLowerCase().includes(q) || 
+      t.content?.toLowerCase().includes(q)
+    );
+  }, [threads, debouncedSearch]);
+
   return (
     <div className="dashboard-layout">
       <Sidebar />
@@ -125,6 +137,14 @@ const Forum = () => {
               <option value="">All Categories</option>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="Search discussions..." 
+              value={search} 
+              onChange={e => setSearch(e.target.value)}
+              style={{ minWidth: 200 }}
+            />
             <button className="btn btn-primary" onClick={() => setShowForm(v => !v)}>
               {showForm ? 'Cancel' : '+ New Post'}
             </button>
@@ -167,12 +187,12 @@ const Forum = () => {
         ) : threads.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: 40 }}>
             <span style={{ fontSize: '2rem' }}>🗣️</span>
-            <h3>No Discussions Yet</h3>
-            <p className="text-muted">Be the first to start a conversation!</p>
+            <h3>No Discussions Found</h3>
+            <p className="text-muted">Try adjusting your search or be the first to start a conversation!</p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 'var(--sp-md)' }}>
-            {threads.map(thread => (
+            {filteredThreads.map(thread => (
               <div key={thread._id} className="card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => handleOpenThread(thread)}>
                 <button 
                   onClick={(e) => handleToggleBookmark(e, thread._id)}

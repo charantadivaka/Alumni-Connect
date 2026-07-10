@@ -9,4 +9,7 @@ const slotSchema = new mongoose.Schema({
     isBooked:  { type: Boolean, default: false },
 }, { timestamps: true });
 
+// Index for "get available slots for alumni" query
+slotSchema.index({ alumni: 1, isBooked: 1 });
+
 module.exports = mongoose.model('MentorSlot', slotSchema);

@@ -162,6 +162,7 @@ const reportJob = async (req, res) => {
         
         job.reports.push(req.user._id);
         await job.save();
+        await invalidatePattern(JOB_CACHE_PATTERN); // report added — invalidate job feed
         res.json({ message: 'Job reported successfully' });
     } catch (err) {
         res.status(500).json({ message: err.message });

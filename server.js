@@ -29,6 +29,7 @@ const mentorshipController  = require('./controllers/mentorshipController');
 const interviewController   = require('./controllers/interviewController');
 const referralController    = require('./controllers/referralController');
 const eventController       = require('./controllers/eventController');
+const connectionController  = require('./controllers/connectionController');
 
 // ── Connect DB ───────────────────────────────────────────────────────────────
 connectDB();
@@ -51,6 +52,7 @@ mentorshipController.setIo(io);
 interviewController.setIo(io);
 referralController.setIo(io);
 eventController.setIo(io);
+connectionController.setIo(io);
 
 // ── Security & Performance ──────────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -65,8 +67,13 @@ if (morgan && logger) {
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300 });
-const authLimiter   = rateLimit({ windowMs: 1 * 60 * 1000, max: 1000000,
-    message: { message: 'Too many login attempts, try again later.' },
+// Auth limiter: 10 requests per minute (prevents brute-force attacks)
+const authLimiter   = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 10,
+    message: { message: 'Too many login attempts. Please wait a minute and try again.' },
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 app.use('/api/', globalLimiter);
 
@@ -84,7 +91,7 @@ app.use(cors({
 }));
 
 // ── Body & Cookie parsers ─────────────────────────────────────────────────────
-app.use(express.json({ limit: '10mb' }));   // 10mb for base64 resumes / images
+app.use(express.json({ limit: '5mb' }));    // 5mb for base64 resumes / images
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -189,6 +196,21 @@ io.on('connection', (socket) => {
         }
     });
 });
+
+// ── Startup Warnings ─────────────────────────────────────────────────────────
+if (!process.env.CLOUDINARY_CLOUD_NAME) {
+    console.warn('⚠️  [WARNING] CLOUDINARY_CLOUD_NAME is not set.');
+    console.warn('   Files (profile pics, resumes) will be stored as base64 in MongoDB.');
+    console.warn('   This is NOT suitable for production. Set Cloudinary credentials in .env.');
+}
+
+if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {
+    console.warn('⚠️  [WARNING] Redis is not configured. OTP store is in-memory (not scalable).');
+}
+
+if (process.env.NODE_ENV !== 'production') {
+    console.warn('⚠️  [WARNING] Running in development mode.');
+}
 
 // ── Start server ───────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;

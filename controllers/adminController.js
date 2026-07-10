@@ -5,9 +5,11 @@ const Story = require('../models/Story');
 const Event = require('../models/Event');
 const Forum = require('../models/Forum');
 const JobApplication = require('../models/JobApplication');
+const AuditLog = require('../models/AuditLog');
 const { invalidatePattern } = require('../config/redis');
 
 const ANALYTICS_CACHE_PATTERN = '__express__/api/admin/analytics*';
+const MATCH_CACHE_PATTERN      = '__express__/api/match*';
 
 // @desc  Get all users (with filters)
 // @route GET /api/admin/users
@@ -56,6 +58,18 @@ const verifyAlumni = async (req, res) => {
         ).select('-password');
         if (!user) return res.status(404).json({ message: 'User not found' });
         await invalidatePattern(ANALYTICS_CACHE_PATTERN); // user counts changed
+        await invalidatePattern(MATCH_CACHE_PATTERN);     // verified alumni now appear in/out of directory
+
+        // Log audit trail
+        await AuditLog.create({
+            adminId: req.user._id,
+            action: status === 'Verified' ? 'VERIFY_ALUMNI' : 'REJECT_ALUMNI',
+            targetId: user._id,
+            targetModel: 'User',
+            details: `Alumni verification status set to ${status}`,
+            ip: req.ip
+        });
+
         res.json(user);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -72,6 +86,18 @@ const toggleSuspend = async (req, res) => {
         user.isSuspended = !user.isSuspended;
         await user.save();
         await invalidatePattern(ANALYTICS_CACHE_PATTERN); // suspension status changed
+        await invalidatePattern(MATCH_CACHE_PATTERN);     // suspended alumni must disappear from browse results
+
+        // Log audit trail
+        await AuditLog.create({
+            adminId: req.user._id,
+            action: user.isSuspended ? 'SUSPEND_USER' : 'UNSUSPEND_USER',
+            targetId: user._id,
+            targetModel: 'User',
+            details: user.isSuspended ? 'Suspended user account' : 'Reactivated user account',
+            ip: req.ip
+        });
+
         res.json({ isSuspended: user.isSuspended, message: user.isSuspended ? 'User suspended' : 'User reactivated' });
     } catch (err) {
         res.status(500).json({ message: err.message });

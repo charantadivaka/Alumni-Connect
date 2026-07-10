@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDebounce } from '../../hooks/useDebounce';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { matchService } from '../../services/matchService';
 import { connectionService } from '../../services/otherServices';
@@ -19,11 +20,13 @@ const BrowseAlumni = () => {
   const [collegeName, setCollegeName] = useState('');
   const [noCollege, setNoCollege] = useState(false);
 
-  const load = async () => {
+  const debouncedFilters = useDebounce(filters, 500);
+
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [result, conns] = await Promise.all([
-        matchService.getMatches(filters),
+        matchService.getMatches(debouncedFilters),
         connectionService.getMy()
       ]);
       // Backend now returns { alumni, collegeName, noCollege }
@@ -41,9 +44,9 @@ const BrowseAlumni = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedFilters]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
   const setFilter = (k, v) => setFilters(p => ({ ...p, [k]: v }));
 
   const maxRating = useMemo(() => {
@@ -167,7 +170,6 @@ const BrowseAlumni = () => {
                 <option value="recentlyJoined">Recently Joined</option>
               </select>
             </div>
-            <button className="btn btn-primary" onClick={load} style={{ marginBottom: 2 }}>Search</button>
           </div>
         )}
 
