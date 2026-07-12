@@ -1,11 +1,13 @@
 const request = require('supertest');
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const authRoutes = require('../routes/authRoutes');
 const User = require('../models/User');
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 
 describe('Auth API Integration Tests', () => {
@@ -44,6 +46,7 @@ describe('Auth API Integration Tests', () => {
             email: 'alumni@test.com',
             password: 'password123',
             role: 'alumni',
+            collegeRollNumber: 'ROLL-AUTH-001',
             isEmailVerified: true
         });
 
@@ -61,6 +64,7 @@ describe('Auth API Integration Tests', () => {
             email: 'admin@test.com',
             password: 'password123',
             role: 'admin',
+            collegeRollNumber: 'ROLL-AUTH-002',
             isEmailVerified: true
         });
 

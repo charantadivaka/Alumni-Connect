@@ -1,22 +1,31 @@
 const request = require('supertest');
 const express = require('express');
 const mongoose = require('mongoose');
-const mentorshipRoutes = require('../routes/mentorshipRoutes');
 const Mentorship = require('../models/Mentorship');
 const User = require('../models/User');
 
+// ── Mock the auth middleware so protect() doesn't need a real JWT ─────────────
+jest.mock('../middleware/authMiddleware', () => ({
+    protect: (req, res, next) => {
+        if (!req.headers.authorization) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+        req.user = {
+            _id: req.headers.authorization,
+            role: req.headers['x-role'] || 'student',
+        };
+        next();
+    },
+}));
+
+// Mock sendNotification to avoid real socket/DB calls
+jest.mock('../utils/sendNotification', () => jest.fn().mockResolvedValue(null));
+
+// Routes must be required AFTER mocks are set up
+const mentorshipRoutes = require('../routes/mentorshipRoutes');
+
 const app = express();
 app.use(express.json());
-
-// Mock auth middleware and role restriction
-app.use((req, res, next) => {
-    if (req.headers.authorization) {
-        req.user = { _id: req.headers.authorization, role: req.headers.role };
-        next();
-    } else {
-        res.status(401).json({ message: 'Not authorized' });
-    }
-});
 app.use('/api/mentorship', mentorshipRoutes);
 
 describe('Mentorship API Integration Tests', () => {
@@ -24,8 +33,8 @@ describe('Mentorship API Integration Tests', () => {
     let alumniId;
 
     beforeEach(async () => {
-        const student = await User.create({ name: 'Student', email: 's@test.com', password: 'pass', role: 'student' });
-        const alumni = await User.create({ name: 'Alumni', email: 'a@test.com', password: 'pass', role: 'alumni' });
+        const student = await User.create({ name: 'Student', email: 's@test.com', password: 'pass123', role: 'student', collegeRollNumber: 'ROLL-M-001' });
+        const alumni = await User.create({ name: 'Alumni', email: 'a@test.com', password: 'pass123', role: 'alumni', collegeRollNumber: 'ROLL-M-002' });
         studentId = student._id.toString();
         alumniId = alumni._id.toString();
     });
@@ -34,7 +43,7 @@ describe('Mentorship API Integration Tests', () => {
         const res = await request(app)
             .post('/api/mentorship')
             .set('Authorization', studentId)
-            .set('role', 'student')
+            .set('x-role', 'student')
             .send({
                 alumniId,
                 topic: 'Career Advice',
@@ -56,7 +65,7 @@ describe('Mentorship API Integration Tests', () => {
         const res = await request(app)
             .put(`/api/mentorship/${session._id}/respond`)
             .set('Authorization', alumniId)
-            .set('role', 'alumni')
+            .set('x-role', 'alumni')
             .send({ status: 'Accepted' });
         
         expect(res.status).toBe(200);

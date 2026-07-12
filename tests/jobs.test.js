@@ -1,23 +1,40 @@
 const request = require('supertest');
 const express = require('express');
 const mongoose = require('mongoose');
-const jobRoutes = require('../routes/jobRoutes');
 const Job = require('../models/Job');
 const User = require('../models/User');
 
+// ── Mock the auth middleware so protect() doesn't need a real JWT ─────────────
+jest.mock('../middleware/authMiddleware', () => ({
+    protect: (req, res, next) => {
+        if (!req.headers.authorization) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+        req.user = {
+            _id: req.headers.authorization,
+            role: 'alumni',
+            company: 'Tech Corp',   // required by createJob validation
+        };
+        next();
+    },
+}));
+
+// Mock Redis to avoid network dependency
+jest.mock('../config/redis', () => ({
+    invalidatePattern: jest.fn().mockResolvedValue(null),
+    cacheMiddleware: () => (req, res, next) => next(),
+}));
+
+// Mock badge service
+jest.mock('../utils/badgeService', () => ({
+    checkAndAwardBadges: jest.fn().mockResolvedValue(null),
+}));
+
+// Routes must be required AFTER mocks are set up
+const jobRoutes = require('../routes/jobRoutes');
+
 const app = express();
 app.use(express.json());
-
-// Mock auth middleware for testing
-app.use((req, res, next) => {
-    if (req.headers.authorization) {
-        req.user = { _id: req.headers.authorization }; // simple mock
-        next();
-    } else {
-        res.status(401).json({ message: 'Not authorized' });
-    }
-});
-
 app.use('/api/jobs', jobRoutes);
 
 describe('Jobs API Integration Tests', () => {
@@ -27,8 +44,9 @@ describe('Jobs API Integration Tests', () => {
         const alumni = await User.create({
             name: 'Job Poster',
             email: 'poster@test.com',
-            password: 'pass',
+            password: 'pass123',
             role: 'alumni',
+            collegeRollNumber: 'ROLL-JOB-001',
             company: 'Tech Corp'
         });
         alumniId = alumni._id.toString();
@@ -73,8 +91,9 @@ describe('Jobs API Integration Tests', () => {
             .set('Authorization', alumniId);
         
         expect(res.status).toBe(200);
-        // Should only return active jobs by default
-        expect(res.body.jobs.length).toBe(1);
-        expect(res.body.jobs[0].title).toBe('Active Job');
+        // getAllJobs returns a plain array (not { jobs: [...] })
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body.length).toBe(1);
+        expect(res.body[0].title).toBe('Active Job');
     });
 });
