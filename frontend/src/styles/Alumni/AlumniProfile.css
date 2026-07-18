@@ -1,1 +1,63 @@
 /* Styles for AlumniProfile */
+
+/* ── AlumniProfile — Avatar Upload Widget ─────────────────────────────── */
+
+.avatar-upload-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.avatar-upload-wrapper:hover {
+  transform: scale(1.04);
+}
+
+.avatar-upload-wrapper:hover .avatar-edit-overlay {
+  opacity: 1;
+}
+
+.avatar-upload-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 0 0 3px var(--clr-primary-glow, rgba(108, 99, 255, 0.35));
+}
+
+/* Dark overlay that appears on hover */
+.avatar-edit-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  backdrop-filter: blur(1px);
+}
+
+/* Hint label shown below the avatar */
+.avatar-upload-wrapper::after {
+  content: 'Edit Photo';
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--clr-primary, #6c63ff);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  pointer-events: none;
+}
+
+.avatar-upload-wrapper:hover::after {
+  opacity: 1;
+}

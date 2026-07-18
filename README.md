@@ -49,7 +49,7 @@ Frontend runs on **http://localhost:5173** (Vite proxies `/api` → backend)
 | Success Stories | Alumni career journeys with likes |
 | Resume Manager | Upload base64 resumes, attach to applications |
 | Admin Dashboard | User verification queue + analytics |
-| Alumni Map | Geographic visualization of alumni |
+
 
 ---
 

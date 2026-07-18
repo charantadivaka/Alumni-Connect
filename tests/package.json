@@ -1,0 +1,13 @@
+{
+  "name": "alumniconnect-combined-tests",
+  "version": "1.0.0",
+  "description": "Combined E2E smoke tests — makes real HTTP requests to the running backend",
+  "private": true,
+  "scripts": {
+    "test": "jest --forceExit",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

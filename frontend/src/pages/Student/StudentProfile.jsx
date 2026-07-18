@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { profileService } from '../../services/profileService';
@@ -10,8 +10,10 @@ const StudentProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
 
   // Colleges list for dropdown
   const [colleges, setColleges] = useState([]);
@@ -81,6 +83,39 @@ const StudentProfile = () => {
   }, [form.collegeRollNumber, selectedCollege]);
 
   const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  // ── Profile picture upload ────────────────────────────────────────────────────
+  const handlePictureChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be under 5 MB.');
+      return;
+    }
+    try {
+      setUploading(true);
+      setError('');
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const result = await profileService.uploadPicture({ imageData: reader.result });
+          setProfile(prev => ({ ...prev, profilePicture: result.profilePicture }));
+          setSuccess('Profile picture updated!');
+          setTimeout(() => setSuccess(''), 4000);
+        } catch (err) {
+          setError(err.message || 'Failed to upload picture.');
+        } finally {
+          setUploading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setError(err.message || 'Failed to read image.');
+      setUploading(false);
+    }
+    // Reset input so same file can be re-selected
+    e.target.value = '';
+  };
 
   const handleCollegeChange = (e) => {
     const id = e.target.value;
@@ -159,9 +194,40 @@ const StudentProfile = () => {
           <div className="card" style={{ maxWidth: 620 }}>
             {/* Avatar + name banner */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28 }}>
-              <div className="avatar-placeholder" style={{ width: 80, height: 80, fontSize: '2rem' }}>
-                {profile?.name?.[0]?.toUpperCase()}
+              {/* ── Clickable profile picture ───────────────────────────── */}
+              <div
+                className="avatar-upload-wrapper"
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                title="Click to change profile picture"
+                style={{ cursor: uploading ? 'wait' : 'pointer' }}
+              >
+                {profile?.profilePicture ? (
+                  <img
+                    src={profile.profilePicture}
+                    alt={profile?.name}
+                    className="avatar-upload-img"
+                  />
+                ) : (
+                  <div className="avatar-placeholder" style={{ width: 80, height: 80, fontSize: '2rem' }}>
+                    {profile?.name?.[0]?.toUpperCase()}
+                  </div>
+                )}
+                <div className="avatar-edit-overlay">
+                  {uploading ? (
+                    <span className="spinner" style={{ width: 22, height: 22, borderWidth: 3 }} />
+                  ) : (
+                    <span style={{ fontSize: '1.4rem' }}>📷</span>
+                  )}
+                </div>
               </div>
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                style={{ display: 'none' }}
+                onChange={handlePictureChange}
+              />
               <div>
                 <h2 style={{ margin: '0 0 4px' }}>{profile?.name}</h2>
                 <p className="text-muted" style={{ margin: 0 }}>{profile?.email}</p>
