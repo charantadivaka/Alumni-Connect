@@ -1,11 +1,11 @@
-const express      = require('express');
-const http         = require('http');
-const { Server }   = require('socket.io');
-const dotenv       = require('dotenv');
-const cors         = require('cors');
-const helmet       = require('helmet');
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
-const rateLimit    = require('express-rate-limit');
+const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 
 dotenv.config();
@@ -25,16 +25,16 @@ try {
 
 // ── Controllers that need the io instance ────────────────────────────────────
 const applicationController = require('./controllers/applicationController');
-const mentorshipController  = require('./controllers/mentorshipController');
-const interviewController   = require('./controllers/interviewController');
-const referralController    = require('./controllers/referralController');
-const eventController       = require('./controllers/eventController');
-const connectionController  = require('./controllers/connectionController');
+const mentorshipController = require('./controllers/mentorshipController');
+const interviewController = require('./controllers/interviewController');
+const referralController = require('./controllers/referralController');
+const eventController = require('./controllers/eventController');
+const connectionController = require('./controllers/connectionController');
 
 // ── Connect DB ───────────────────────────────────────────────────────────────
 connectDB();
 
-const app    = express();
+const app = express();
 const server = http.createServer(app);
 
 // ── Socket.io ────────────────────────────────────────────────────────────────
