@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true, minlength: 6, select: false },
     role: { type: String, enum: ['student', 'alumni', 'admin'], required: true },
     college: { type: require('mongoose').Schema.Types.ObjectId, ref: 'College', default: null },
-    collegeRollNumber: { type: String, required: true, unique: true, trim: true },
+    collegeRollNumber: { type: String, required: function() { return this.role !== 'admin'; }, unique: true, sparse: true, trim: true },
     profilePicture: { type: String, default: '' },
     bio: { type: String, default: '', maxlength: 600 },
     department: { type: String, default: '' },

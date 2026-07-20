@@ -234,4 +234,4 @@ const sendJobApplicationEmail = async (alumniEmail, alumniName, studentName, job
     }
 };
 
-module.exports = { sendOtpEmail, sendPasswordResetEmail, sendMentorshipAcceptedEmail, sendJobApplicationEmail };
+module.exports = { sendOtpEmail, sendPasswordResetEmail, sendMentorshipAcceptedEmail, sendJobApplicationEmail, createTransporter };

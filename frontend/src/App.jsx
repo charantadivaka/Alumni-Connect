@@ -13,6 +13,8 @@ const RoleSelection   = lazy(() => import('./pages/Home/RoleSelection'));
 const StudentRegister = lazy(() => import('./pages/Home/StudentRegister'));
 const AlumniRegister  = lazy(() => import('./pages/Home/AlumniRegister'));
 const About           = lazy(() => import('./pages/Home/About'));
+const ForgotPassword  = lazy(() => import('./pages/Home/ForgotPassword'));
+const ResetPassword   = lazy(() => import('./pages/Home/ResetPassword'));
 
 // Student pages
 const StudentDashboard    = lazy(() => import('./pages/Student/Dashboard'));
@@ -98,8 +100,10 @@ const App = () => {
           <Route path="/login"       element={user ? <Navigate to={`/${user.role}/dashboard`} /> : <Login />} />
           <Route path="/admin/login" element={user?.role === 'admin' ? <Navigate to="/admin/dashboard" /> : <AdminLogin />} />
           <Route path="/role-select" element={<RoleSelection />} />
-          <Route path="/register/student" element={<StudentRegister />} />
-          <Route path="/register/alumni"  element={<AlumniRegister />} />
+          <Route path="/register/student"  element={<StudentRegister />} />
+          <Route path="/register/alumni"   element={<AlumniRegister />} />
+          <Route path="/forgot-password"   element={<ForgotPassword />} />
+          <Route path="/reset-password"    element={<ResetPassword />} />
 
           {/* ── Student ── */}
           <Route path="/student/dashboard"  element={<RoleGuard role="student"><StudentDashboard /></RoleGuard>} />

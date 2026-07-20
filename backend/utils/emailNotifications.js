@@ -1,8 +1,10 @@
-const { sendEmail } = require('./emailService');
+// ── Email notification helpers ─────────────────────────────────────────────────
+// These use the shared createTransporter from emailService to send notifications.
+const { createTransporter } = require('./emailService');
 
 const sendMentorshipAcceptedEmail = async (studentEmail, alumniName, topic) => {
     if (!process.env.SMTP_USER) return;
-    
+
     const subject = `Mentorship Session Accepted by ${alumniName}`;
     const text = `Hi there,\n\nGood news! ${alumniName} has accepted your mentorship request regarding "${topic}".\n\nPlease log in to AlumniConnect to view the details and schedule your session.\n\nBest,\nThe AlumniConnect Team`;
     const html = `
@@ -17,7 +19,14 @@ const sendMentorshipAcceptedEmail = async (studentEmail, alumniName, topic) => {
     `;
 
     try {
-        await sendEmail({ to: studentEmail, subject, text, html });
+        const transporter = await createTransporter();
+        await transporter.sendMail({
+            from: `"AlumniConnect" <${process.env.SMTP_USER}>`,
+            to: studentEmail,
+            subject,
+            text,
+            html,
+        });
     } catch (err) {
         console.error('Failed to send mentorship accepted email:', err);
     }
@@ -40,7 +49,14 @@ const sendJobApplicationEmail = async (alumniEmail, studentName, jobTitle) => {
     `;
 
     try {
-        await sendEmail({ to: alumniEmail, subject, text, html });
+        const transporter = await createTransporter();
+        await transporter.sendMail({
+            from: `"AlumniConnect" <${process.env.SMTP_USER}>`,
+            to: alumniEmail,
+            subject,
+            text,
+            html,
+        });
     } catch (err) {
         console.error('Failed to send job application email:', err);
     }

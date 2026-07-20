@@ -239,7 +239,7 @@ const register = async (req, res) => {
         const existingEmail = await User.findOne({ email });
         if (existingEmail) return res.status(400).json({ message: 'Email already registered' });
 
-        const existingRoll = await User.findOne({ collegeRollNumber });
+        const existingRoll = collegeRollNumber ? await User.findOne({ collegeRollNumber }) : null;
         if (existingRoll) return res.status(400).json({ message: 'Roll number already registered' });
 
         if (collegeId) {
