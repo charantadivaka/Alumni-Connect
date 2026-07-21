@@ -1,0 +1,431 @@
+/* ── VideoCallModal.css ──────────────────────────────────────────────────────
+   Dark, premium video call UI with glassmorphism controls bar.
+   z-index: 9000+ to sit above all app content.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Shared: fullscreen backdrops ─────────────────────────────────────────── */
+.vc-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9100;
+    background: rgba(3, 5, 16, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Incoming / Calling panel card ───────────────────────────────────────── */
+.vc-panel {
+    background: linear-gradient(160deg, #1a1f35 0%, #0f1425 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 44px 52px;
+    text-align: center;
+    width: min(420px, 90vw);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(99, 102, 241, 0.15);
+}
+
+.vc-panel-ring-icon {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 22px;
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
+    animation: vc-ring 2s ease-out infinite;
+}
+
+.vc-ring-pulse {
+    animation: vc-ring 1.4s ease-out infinite;
+}
+
+@keyframes vc-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.55); }
+    70%  { box-shadow: 0 0 0 22px rgba(99, 102, 241, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+.vc-panel-sub {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 600;
+    margin: 0 0 6px;
+}
+
+.vc-panel-title {
+    color: #f1f5f9;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0 0 26px;
+    letter-spacing: -0.3px;
+}
+
+.vc-panel-hint {
+    color: #64748b;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* Animated waiting dots */
+.vc-calling-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.vc-dot {
+    width: 9px;
+    height: 9px;
+    background: #6366f1;
+    border-radius: 50%;
+    animation: vc-dot-bounce 1.3s ease-in-out infinite;
+}
+
+.vc-dot:nth-child(2) { animation-delay: 0.22s; }
+.vc-dot:nth-child(3) { animation-delay: 0.44s; }
+
+@keyframes vc-dot-bounce {
+    0%, 80%, 100% { transform: scale(0.65); opacity: 0.35; }
+    40%            { transform: scale(1.0);  opacity: 1; }
+}
+
+/* Accept / Reject buttons */
+.vc-panel-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.vc-accept-btn,
+.vc-reject-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 30px;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.vc-accept-btn {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(34, 197, 94, 0.35);
+}
+
+.vc-accept-btn:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 28px rgba(34, 197, 94, 0.5);
+}
+
+.vc-reject-btn {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+}
+
+.vc-reject-btn:hover {
+    background: rgba(239, 68, 68, 0.22);
+}
+
+/* ── Active call — fullscreen overlay ────────────────────────────────────── */
+.vc-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    display: flex;
+    flex-direction: column;
+    background: #07090f;
+    font-family: inherit;
+}
+
+/* ── Video stage ─────────────────────────────────────────────────────────── */
+.vc-stage {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #07090f;
+}
+
+.vc-remote-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Connecting spinner overlay */
+.vc-connecting {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.vc-spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid rgba(99, 102, 241, 0.2);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: vc-spin 0.75s linear infinite;
+}
+
+@keyframes vc-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Remote name tag (top-left) */
+.vc-name-tag {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    max-width: calc(100% - 180px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Being-recorded badge inside name tag */
+.vc-being-recorded-badge {
+    font-size: 0.78rem;
+    color: #f87171;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    animation: vc-pulse-opacity 1.5s ease-in-out infinite;
+}
+
+/* Active recording pill (top-right, alumni sees this) */
+.vc-rec-pill {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(239, 68, 68, 0.18);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    backdrop-filter: blur(10px);
+    color: #fca5a5;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    animation: vc-pulse-opacity 1.5s ease-in-out infinite;
+}
+
+.vc-rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    flex-shrink: 0;
+}
+
+@keyframes vc-pulse-opacity {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.55; }
+}
+
+/* ── Self-preview (picture-in-picture) ───────────────────────────────────── */
+.vc-self-preview {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    width: 190px;
+    height: 142px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+    background: #1a1f35;
+    transition: transform 0.2s ease;
+    cursor: default;
+}
+
+.vc-self-preview:hover {
+    transform: scale(1.04);
+}
+
+.vc-self-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.vc-self-cam-off {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    background: #111827;
+    color: #4b5563;
+}
+
+/* ── Controls bar ────────────────────────────────────────────────────────── */
+.vc-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 18px 28px;
+    background: rgba(7, 9, 15, 0.96);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    flex-wrap: wrap;
+}
+
+/* Control button */
+.vc-ctrl-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 12px 16px;
+    min-width: 68px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    cursor: pointer;
+    color: #cbd5e1;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    transition: background 0.18s, transform 0.13s, border-color 0.18s;
+    font-family: inherit;
+    outline: none;
+}
+
+.vc-ctrl-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.13);
+    transform: translateY(-2px);
+}
+
+.vc-ctrl-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.vc-ctrl-btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.vc-ctrl-icon {
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.vc-ctrl-label {
+    font-size: 0.68rem;
+    color: inherit;
+}
+
+/* Variants */
+.vc-btn-off {
+    background: rgba(239, 68, 68, 0.14);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #f87171;
+}
+
+.vc-btn-active {
+    background: rgba(99, 102, 241, 0.22);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #a5b4fc;
+}
+
+.vc-btn-recording {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #fca5a5;
+    animation: vc-pulse-opacity 1.5s ease-in-out infinite;
+}
+
+.vc-btn-end {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-color: #ef4444;
+    color: #fff;
+    padding: 12px 26px;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+}
+
+.vc-btn-end:hover:not(:disabled) {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    box-shadow: 0 6px 22px rgba(239, 68, 68, 0.5);
+}
+
+/* Divider between button groups */
+.vc-ctrl-divider {
+    width: 1px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    margin: 0 2px;
+}
+
+/* ── Responsive tweaks ───────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    .vc-panel {
+        padding: 32px 24px;
+    }
+
+    .vc-panel-title {
+        font-size: 1.3rem;
+    }
+
+    .vc-self-preview {
+        width: 120px;
+        height: 90px;
+        bottom: 12px;
+        right: 12px;
+    }
+
+    .vc-ctrl-btn {
+        min-width: 54px;
+        padding: 10px 12px;
+    }
+
+    .vc-ctrl-label {
+        display: none; /* icon-only on small screens */
+    }
+
+    .vc-controls {
+        gap: 8px;
+        padding: 14px 16px;
+    }
+}

@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Spinner } from './components/ui';
+import { VideoCallProvider } from './context/VideoCallContext';
+import VideoCallModal from './components/ui/VideoCallModal';
 
 // Auth guards
 import { ProtectedRoute, RoleGuard } from './components/auth/ProtectedRoute';
@@ -90,10 +92,12 @@ const App = () => {
   const { user } = useAuth();
 
   return (
-    <BrowserRouter>
-      <ThemeToggle />
-      <Suspense fallback={<Spinner />}>
-        <Routes>
+    <VideoCallProvider>
+      <VideoCallModal />
+      <BrowserRouter>
+        <ThemeToggle />
+        <Suspense fallback={<Spinner />}>
+          <Routes>
           {/* ── Public ── */}
           <Route path="/"            element={<Landing />} />
           <Route path="/about"       element={<About />} />
@@ -164,8 +168,9 @@ const App = () => {
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route path="*"             element={<NotFound />} />
         </Routes>
-      </Suspense>
-    </BrowserRouter>
+        </Suspense>
+      </BrowserRouter>
+    </VideoCallProvider>
   );
 };
 

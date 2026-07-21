@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { mentorshipService } from '../../services/mentorshipService';
+import { useVideoCall } from '../../context/VideoCallContext';
 import '../../styles/Alumni/MentorshipRequests.css';
 
 const STAGE_COLORS = {
@@ -16,6 +17,7 @@ const MentorshipRequests = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState('');
   const [activeTab, setActiveTab] = useState('pending');
+  const { startCall } = useVideoCall();
 
   // Notes modal for completing a session
   const [completeTarget, setCompleteTarget] = useState(null);
@@ -136,9 +138,28 @@ const MentorshipRequests = () => {
                 )}
 
                 {session.status === 'Accepted' && (
-                  <button className="btn btn-primary btn-sm" onClick={() => { setCompleteTarget(session); setSessionNotes(''); }}>
-                    Mark as Completed
-                  </button>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      style={{ flex: 1 }}
+                      onClick={() => { setCompleteTarget(session); setSessionNotes(''); }}
+                    >
+                      Mark as Completed
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      onClick={() => startCall(
+                        session.student?._id,
+                        session.student?.name || 'Student',
+                        session._id,
+                        'mentorship'
+                      )}
+                      title={`Start video call with ${session.student?.name}`}
+                    >
+                      📹 Video Call
+                    </button>
+                  </div>
                 )}
               </div>
             ))}

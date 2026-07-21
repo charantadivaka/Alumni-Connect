@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { interviewService } from '../../services/mentorshipService';
+import { useVideoCall } from '../../context/VideoCallContext';
 import '../../styles/Alumni/InterviewRequests.css';
 
 const BADGE = {
@@ -15,6 +16,7 @@ const InterviewRequests = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
+  const { startCall } = useVideoCall();
 
   // Feedback modal
   const [feedbackTarget, setFeedbackTarget] = useState(null);
@@ -135,9 +137,28 @@ const InterviewRequests = () => {
                 )}
 
                 {iv.status === 'Accepted' && (
-                  <button className="btn btn-primary btn-sm" onClick={() => { setFeedbackTarget(iv); setFeedback({ strengths: '', improvements: '', rating: 5 }); }}>
-                    Submit Feedback & Complete
-                  </button>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      style={{ flex: 1 }}
+                      onClick={() => { setFeedbackTarget(iv); setFeedback({ strengths: '', improvements: '', rating: 5 }); }}
+                    >
+                      Submit Feedback &amp; Complete
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      onClick={() => startCall(
+                        iv.student?._id,
+                        iv.student?.name || 'Student',
+                        iv._id,
+                        'interview'
+                      )}
+                      title={`Start video call with ${iv.student?.name}`}
+                    >
+                      📹 Video Call
+                    </button>
+                  </div>
                 )}
               </div>
             ))}

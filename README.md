@@ -56,20 +56,24 @@ Frontend runs on **http://localhost:5173** (Vite proxies `/api` → backend)
 ## 🗂 Project Structure
 
 ```
-holiday-project/
-├── server.js           ← Express + Socket.io entry
-├── config/db.js        ← MongoDB connection
-├── models/             ← 15 Mongoose schemas
-├── controllers/        ← 14 business logic modules
-├── routes/             ← 19 route files
-├── middleware/         ← Auth, RBAC, error handler
-├── utils/              ← Token, matching algorithm, notifications
-└── frontend/
-    └── src/
-        ├── context/    ← AuthContext, SocketContext
-        ├── services/   ← Fetch-based API layer (no Axios)
-        ├── components/ ← Sidebar, Navbar, ProtectedRoute
-        └── pages/      ← Student / Alumni / Admin / Home / Shared
+AlumniConnect-holidays/
+├── backend/
+│   ├── server.js           ← Express + Socket.io entry
+│   ├── config/             ← DB, Redis, Swagger, Cloudinary, Logger
+│   ├── controllers/        ← 20 business logic modules
+│   ├── models/             ← 18 Mongoose schemas
+│   ├── routes/             ← 19 API route modules
+│   ├── middleware/         ← Auth, RBAC, Validation, Error handling
+│   └── utils/              ← Tokens, Matching algorithm, Email & In-app Notifications
+├── frontend/
+│   └── src/
+│       ├── context/        ← AuthContext, SocketContext
+│       ├── services/       ← Fetch-based API service layer
+│       ├── components/     ← Layout, Auth, UI components
+│       ├── pages/          ← Student / Alumni / Admin / Home / Shared pages
+│       └── styles/         ← Modular CSS stylesheets
+├── tests/                  ← Integration & Jest test suite
+└── docker-compose.yml
 ```
 
 ---

@@ -184,6 +184,35 @@ io.on('connection', (socket) => {
         if (s) io.to(s).emit('user_stop_typing', { senderId });
     });
 
+    // ── Video Call Signaling (WebRTC) ──────────────────────────────────────────
+    // Alumni initiates a call — relays the WebRTC offer to the student's room
+    socket.on('call_user', ({ userToCall, signal, from, callerName, sessionId, sessionType }) => {
+        io.to(userToCall).emit('incoming_call', { signal, from, callerName, sessionId, sessionType });
+    });
+
+    // Student accepts — relays the WebRTC answer back to the alumni's room
+    socket.on('answer_call', ({ to, signal }) => {
+        io.to(to).emit('call_accepted', { signal });
+    });
+
+    // ICE candidate trickling (both directions)
+    socket.on('ice_candidate', ({ to, candidate }) => {
+        io.to(to).emit('ice_candidate', { candidate });
+    });
+
+    // Either party hangs up
+    socket.on('end_call', ({ to }) => {
+        io.to(to).emit('call_ended');
+    });
+
+    // Alumni starts/stops recording — shows indicator to the student
+    socket.on('recording_started', ({ to }) => {
+        io.to(to).emit('recording_started');
+    });
+    socket.on('recording_stopped', ({ to }) => {
+        io.to(to).emit('recording_stopped');
+    });
+
     // Disconnect
     socket.on('disconnect', () => {
         for (const [uid, sid] of onlineUsers.entries()) {
