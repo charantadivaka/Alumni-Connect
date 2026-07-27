@@ -8,8 +8,9 @@ const { sendOtpEmail, sendPasswordResetEmail } = require('../utils/emailService'
 // ── Redis client (optional — gracefully falls back to in-memory) ──────────────
 let redisClient = null;
 try {
-    const { getRedisClient } = require('../config/redis');
-    redisClient = getRedisClient();
+    const { redisClient: rc } = require('../config/redis');
+    // Only use Redis if it's a real connection (not the dummy fallback)
+    if (rc && !rc.isDummy) redisClient = rc;
 } catch {
     /* Redis not available — fall back to in-memory Map */
 }

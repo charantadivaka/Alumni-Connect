@@ -45,6 +45,11 @@ const Landing = () => {
                 How It Works
               </Link>
             </div>
+            <div className="landing-college-register-wrap">
+              <Link to="/register-college" className="landing-college-register-btn">
+                🏫 Register Your College
+              </Link>
+            </div>
           </div>
         </div>
       </section>

@@ -132,4 +132,48 @@ const validateRollNumber = async (req, res) => {
     }
 };
 
-module.exports = { getColleges, getAllCollegesAdmin, createCollege, updateCollege, deleteCollege, validateRollNumber };
+// @desc  Check a college's fee/subscription status by name (public)
+// @route GET /api/colleges/fee-status?name=<collegeName>
+const getCollegeFeeStatus = async (req, res) => {
+    try {
+        const { name } = req.query;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ message: 'College name is required.' });
+        }
+
+        // Case-insensitive search by name (regex-safe)
+        const escapedName = name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const college = await College.findOne({
+            name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+        }).select('name feesPaid feePaidUntil isActive');
+
+        if (!college) {
+            return res.status(404).json({
+                found: false,
+                message: 'No college found with that name. Please check the spelling.',
+            });
+        }
+
+        const now = new Date();
+        const expiry = college.feePaidUntil ? new Date(college.feePaidUntil) : null;
+        const isExpired = expiry ? expiry < now : true;
+        const daysRemaining = expiry
+            ? Math.max(0, Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)))
+            : 0;
+
+        res.json({
+            found: true,
+            collegeName: college.name,
+            isActive: college.isActive,
+            feesPaid: college.feesPaid,
+            feePaidUntil: expiry ? expiry.toISOString() : null,
+            isExpired,
+            daysRemaining,
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+module.exports = { getColleges, getAllCollegesAdmin, createCollege, updateCollege, deleteCollege, validateRollNumber, getCollegeFeeStatus };
+

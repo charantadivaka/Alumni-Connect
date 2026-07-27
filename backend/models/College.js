@@ -29,6 +29,29 @@ const collegeSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    // ── Fee / Payment tracking ───────────────────────────────────────────
+    feesPaid: {
+        type: Boolean,
+        default: false,
+    },
+    feePaidUntil: {
+        type: Date,
+        default: null,
+    },
+    razorpayOrderId: {
+        type: String,
+        default: null,
+    },
+    razorpayPaymentId: {
+        type: String,
+        default: null,
+    },
+    // Contact email of whoever registered the college
+    registrantEmail: {
+        type: String,
+        default: '',
+        trim: true,
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('College', collegeSchema);

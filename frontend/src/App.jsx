@@ -14,9 +14,10 @@ const Login           = lazy(() => import('./pages/Home/Login'));
 const RoleSelection   = lazy(() => import('./pages/Home/RoleSelection'));
 const StudentRegister = lazy(() => import('./pages/Home/StudentRegister'));
 const AlumniRegister  = lazy(() => import('./pages/Home/AlumniRegister'));
-const About           = lazy(() => import('./pages/Home/About'));
-const ForgotPassword  = lazy(() => import('./pages/Home/ForgotPassword'));
-const ResetPassword   = lazy(() => import('./pages/Home/ResetPassword'));
+const About              = lazy(() => import('./pages/Home/About'));
+const ForgotPassword     = lazy(() => import('./pages/Home/ForgotPassword'));
+const ResetPassword      = lazy(() => import('./pages/Home/ResetPassword'));
+const CollegeRegister    = lazy(() => import('./pages/Home/CollegeRegister'));
 
 // Student pages
 const StudentDashboard    = lazy(() => import('./pages/Student/Dashboard'));
@@ -108,6 +109,7 @@ const App = () => {
           <Route path="/register/alumni"   element={<AlumniRegister />} />
           <Route path="/forgot-password"   element={<ForgotPassword />} />
           <Route path="/reset-password"    element={<ResetPassword />} />
+          <Route path="/register-college"  element={<CollegeRegister />} />
 
           {/* ── Student ── */}
           <Route path="/student/dashboard"  element={<RoleGuard role="student"><StudentDashboard /></RoleGuard>} />

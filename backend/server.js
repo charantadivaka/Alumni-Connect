@@ -115,6 +115,7 @@ app.use('/api/bookmarks',     require('./routes/bookmarkRoutes'));
 app.use('/api/connections',   require('./routes/connectionRoutes'));
 app.use('/api/admin',         require('./routes/adminRoutes'));
 app.use('/api/colleges',      require('./routes/collegeRoutes'));
+app.use('/api/payments',      require('./routes/razorpayRoutes'));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ message: '🎓 Alumni Network API running' }));

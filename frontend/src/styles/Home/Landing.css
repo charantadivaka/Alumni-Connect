@@ -132,6 +132,46 @@
   font-size: 1rem;
 }
 
+/* ── College Register link ── */
+.landing-college-register-wrap {
+  margin-top: var(--sp-md);
+}
+
+.landing-college-register-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  transition: all var(--tr-fast);
+  white-space: nowrap;
+}
+
+.landing-college-register-btn:hover {
+  color: var(--clr-text);
+  border-color: rgba(108, 99, 255, 0.5);
+  background: rgba(108, 99, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.light-theme .landing-college-register-btn {
+  border-color: rgba(108, 99, 255, 0.25);
+  color: var(--clr-text-muted);
+  background: rgba(108, 99, 255, 0.04);
+}
+
+.light-theme .landing-college-register-btn:hover {
+  border-color: var(--clr-primary);
+  background: rgba(108, 99, 255, 0.1);
+  color: var(--clr-primary);
+}
+
 /* ── Features Section ── */
 .landing-features {
   padding: var(--sp-2xl) var(--sp-lg);
