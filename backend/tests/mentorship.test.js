@@ -12,21 +12,31 @@ jest.mock('../middleware/authMiddleware', () => ({
         }
         req.user = {
             _id: req.headers.authorization,
+            name: 'Test User',
             role: req.headers['x-role'] || 'student',
         };
         next();
     },
+    roleCheck: (roles) => (req, res, next) => {
+        if (!req.user || !roles.includes(req.user.role)) {
+            return res.status(403).json({ message: 'Forbidden: Insufficient privileges' });
+        }
+        next();
+    },
 }));
 
-// Mock sendNotification to avoid real socket/DB calls
-jest.mock('../utils/sendNotification', () => jest.fn().mockResolvedValue(null));
+// Mock notification service to avoid real socket/DB calls
+jest.mock('../shared/services/notificationService', () => ({
+    sendNotification: jest.fn().mockResolvedValue(null),
+}));
 
 // Routes must be required AFTER mocks are set up
-const mentorshipRoutes = require('../routes/mentorshipRoutes');
+const mentorshipRoutes = require('../modules/mentorship/mentorship.routes');
 
 const app = express();
 app.use(express.json());
 app.use('/api/mentorship', mentorshipRoutes);
+app.use(require('../middleware/errorMiddleware').errorHandler);
 
 describe('Mentorship API Integration Tests', () => {
     let studentId;
@@ -51,8 +61,8 @@ describe('Mentorship API Integration Tests', () => {
             });
         
         expect(res.status).toBe(201);
-        expect(res.body.topic).toBe('Career Advice');
-        expect(res.body.status).toBe('Pending');
+        expect(res.body.data.topic).toBe('Career Advice');
+        expect(res.body.data.status).toBe('Pending');
     });
 
     it('should allow alumni to accept a mentorship session', async () => {
@@ -69,6 +79,6 @@ describe('Mentorship API Integration Tests', () => {
             .send({ status: 'Accepted' });
         
         expect(res.status).toBe(200);
-        expect(res.body.status).toBe('Accepted');
+        expect(res.body.data.status).toBe('Accepted');
     });
 });

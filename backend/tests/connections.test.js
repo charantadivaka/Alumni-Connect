@@ -14,7 +14,7 @@
 const request = require('supertest');
 const express = require('express');
 const mongoose = require('mongoose');
-const connectionRoutes = require('../routes/connectionRoutes');
+const connectionRoutes = require('../modules/connections/connection.routes');
 const User = require('../models/User');
 const Connection = require('../models/Connection');
 
@@ -30,12 +30,16 @@ jest.mock('../middleware/authMiddleware', () => ({
         req.user = { _id: req.headers.authorization, name: 'Test User' };
         next();
     },
+    roleCheck: () => (req, res, next) => next(),
 }));
 
-// Mock sendNotification to avoid real socket/DB calls
-jest.mock('../utils/sendNotification', () => jest.fn().mockResolvedValue(null));
+// Mock notification service to avoid real socket/DB calls
+jest.mock('../shared/services/notificationService', () => ({
+    sendNotification: jest.fn().mockResolvedValue(null),
+}));
 
 app.use('/api/connections', connectionRoutes);
+app.use(require('../middleware/errorMiddleware').errorHandler);
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Connections API Integration Tests', () => {
@@ -66,8 +70,8 @@ describe('Connections API Integration Tests', () => {
             .set('Authorization', userAId);
 
         expect(res.status).toBe(201);
-        expect(res.body.message).toBe('Connection request sent.');
-        expect(res.body.connection).toBeDefined();
+        expect(res.body.message).toBe('Connection request sent');
+        expect(res.body.data).toBeDefined();
     });
 
     it('should prevent a user from connecting with themselves', async () => {
@@ -99,27 +103,27 @@ describe('Connections API Integration Tests', () => {
             .set('Authorization', userAId);
 
         expect(res.status).toBe(200);
-        expect(Array.isArray(res.body)).toBe(true);
-        expect(res.body.length).toBe(1);
+        expect(Array.isArray(res.body.data)).toBe(true);
+        expect(res.body.data.length).toBe(1);
     });
 
     it('should allow the receiver to accept a connection request', async () => {
         const conn = await Connection.create({ sender: userAId, receiver: userBId });
 
         const res = await request(app)
-            .put(`/api/connections/${conn._id}/respond`)
+            .put(`/api/connections/respond/${conn._id}`)
             .set('Authorization', userBId)
             .send({ status: 'Accepted' });
 
         expect(res.status).toBe(200);
-        expect(res.body.connection.status).toBe('Accepted');
+        expect(res.body.data.status).toBe('Accepted');
     });
 
     it('should return 400 for invalid status when responding', async () => {
         const conn = await Connection.create({ sender: userAId, receiver: userBId });
 
         const res = await request(app)
-            .put(`/api/connections/${conn._id}/respond`)
+            .put(`/api/connections/respond/${conn._id}`)
             .set('Authorization', userBId)
             .send({ status: 'Maybe' });
 
@@ -132,7 +136,7 @@ describe('Connections API Integration Tests', () => {
 
         // userA is the SENDER, not the receiver — should be forbidden
         const res = await request(app)
-            .put(`/api/connections/${conn._id}/respond`)
+            .put(`/api/connections/respond/${conn._id}`)
             .set('Authorization', userAId)
             .send({ status: 'Accepted' });
 
@@ -147,7 +151,7 @@ describe('Connections API Integration Tests', () => {
             .set('Authorization', userAId);
 
         expect(res.status).toBe(200);
-        expect(res.body.message).toBe('Connection removed.');
+        expect(res.body.message).toBe('Connection removed');
     });
 
     it('should return 404 when trying to remove a non-existent connection', async () => {

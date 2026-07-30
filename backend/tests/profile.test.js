@@ -10,7 +10,7 @@
 
 const request = require('supertest');
 const express = require('express');
-const profileRoutes = require('../routes/profileRoutes');
+const profileRoutes = require('../modules/profile/profile.routes');
 const User = require('../models/User');
 
 // ── Mock dependencies ─────────────────────────────────────────────────────────
@@ -24,6 +24,7 @@ jest.mock('../middleware/authMiddleware', () => ({
         req.user = { _id: req.headers.authorization };
         next();
     },
+    roleCheck: () => (req, res, next) => next(),
 }));
 
 // Mock Redis to avoid network dependency
@@ -36,6 +37,7 @@ jest.mock('../config/redis', () => ({
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use('/api/profile', profileRoutes);
+app.use(require('../middleware/errorMiddleware').errorHandler);
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Profile API Integration Tests', () => {
@@ -58,18 +60,18 @@ describe('Profile API Integration Tests', () => {
     // ── GET /api/profile ──────────────────────────────────────────────────────
     it('should return the authenticated user profile', async () => {
         const res = await request(app)
-            .get('/api/profile')
+            .get('/api/profile/my-profile')
             .set('Authorization', testUserId);
 
         expect(res.status).toBe(200);
-        expect(res.body.email).toBe('alice@test.com');
-        expect(res.body.name).toBe('Alice Test');
+        expect(res.body.data.email).toBe('alice@test.com');
+        expect(res.body.data.name).toBe('Alice Test');
         // Password must never be returned
-        expect(res.body.password).toBeUndefined();
+        expect(res.body.data.password).toBeUndefined();
     });
 
     it('should return 401 if no Authorization header is sent', async () => {
-        const res = await request(app).get('/api/profile');
+        const res = await request(app).get('/api/profile/my-profile');
 
         expect(res.status).toBe(401);
     });
@@ -89,9 +91,9 @@ describe('Profile API Integration Tests', () => {
             .set('Authorization', testUserId);
 
         expect(res.status).toBe(200);
-        expect(res.body.name).toBe('Bob Alumni');
-        expect(res.body.password).toBeUndefined();
-        expect(res.body.idProof).toBeUndefined(); // sensitive field should be hidden
+        expect(res.body.data.name).toBe('Bob Alumni');
+        expect(res.body.data.password).toBeUndefined();
+        expect(res.body.data.idProof).toBeUndefined(); // sensitive field should be hidden
     });
 
     it('should return 404 for a non-existent user ID', async () => {
@@ -114,8 +116,8 @@ describe('Profile API Integration Tests', () => {
             .send({ bio: 'Updated bio', skills: ['JavaScript', 'Node.js'] });
 
         expect(res.status).toBe(200);
-        expect(res.body.bio).toBe('Updated bio');
-        expect(res.body.skills).toContain('Node.js');
+        expect(res.body.data.bio).toBe('Updated bio');
+        expect(res.body.data.skills).toContain('Node.js');
     });
 
     it('should NOT allow updating protected fields like role or email', async () => {

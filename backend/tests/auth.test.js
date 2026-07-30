@@ -2,13 +2,14 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
-const authRoutes = require('../routes/authRoutes');
+const authRoutes = require('../modules/auth/auth.routes');
 const User = require('../models/User');
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use('/api/auth', authRoutes);
+app.use(require('../middleware/errorMiddleware').errorHandler);
 
 describe('Auth API Integration Tests', () => {
     it('should successfully send OTP for a new user registration', async () => {
@@ -22,8 +23,8 @@ describe('Auth API Integration Tests', () => {
             });
         
         expect(res.status).toBe(200);
-        expect(res.body.message).toBe('OTP sent successfully');
-        expect(res.body.email).toBe('teststudent@example.com');
+        expect(res.body.message).toBe('OTP sent successfully to email.');
+        expect(res.body.data.email).toBe('teststudent@example.com');
     });
 
     it('should return error for invalid email', async () => {
@@ -55,7 +56,7 @@ describe('Auth API Integration Tests', () => {
             .send({ email: 'alumni@test.com', password: 'password123' });
         
         expect(res.status).toBe(200);
-        expect(res.body.email).toBe('alumni@test.com');
+        expect(res.body.data.user.email).toBe('alumni@test.com');
     });
 
     it('should reject login with wrong password', async () => {

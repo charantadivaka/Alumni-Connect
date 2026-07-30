@@ -12,7 +12,7 @@
 const request = require('supertest');
 const express = require('express');
 const mongoose = require('mongoose');
-const eventRoutes = require('../routes/eventRoutes');
+const eventRoutes = require('../modules/events/event.routes');
 const User = require('../models/User');
 const Event = require('../models/Event');
 
@@ -26,6 +26,7 @@ jest.mock('../middleware/authMiddleware', () => ({
         req.user = JSON.parse(req.headers.authorization);
         next();
     },
+    roleCheck: () => (req, res, next) => next(),
 }));
 
 // Role middleware is the real one (we want to test it works end-to-end)
@@ -44,6 +45,7 @@ jest.mock('../utils/badgeService', () => ({
 const app = express();
 app.use(express.json());
 app.use('/api/events', eventRoutes);
+app.use(require('../middleware/errorMiddleware').errorHandler);
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Events API Integration Tests', () => {
@@ -100,9 +102,9 @@ describe('Events API Integration Tests', () => {
             .set('Authorization', authHeader(adminUser)); // admin sees all colleges
 
         expect(res.status).toBe(200);
-        expect(Array.isArray(res.body)).toBe(true);
-        expect(res.body.length).toBe(1);
-        expect(res.body[0].title).toBe('Active Hackathon');
+        expect(Array.isArray(res.body.data.events)).toBe(true);
+        expect(res.body.data.events.length).toBe(1);
+        expect(res.body.data.events[0].title).toBe('Active Hackathon');
     });
 
     // ── POST /api/events ──────────────────────────────────────────────────────
@@ -118,8 +120,8 @@ describe('Events API Integration Tests', () => {
             });
 
         expect(res.status).toBe(201);
-        expect(res.body.title).toBe('Code Sprint');
-        expect(res.body.category).toBe('Hackathon');
+        expect(res.body.data.title).toBe('Code Sprint');
+        expect(res.body.data.category).toBe('Hackathon');
     });
 
     it('should prevent a student from creating a Webinar event', async () => {
@@ -149,7 +151,7 @@ describe('Events API Integration Tests', () => {
             });
 
         expect(res.status).toBe(201);
-        expect(res.body.category).toBe('Webinar');
+        expect(res.body.data.category).toBe('Webinar');
     });
 
     it('should prevent alumni from creating a Hackathon event', async () => {
@@ -184,8 +186,8 @@ describe('Events API Integration Tests', () => {
             .set('Authorization', authHeader(student));
 
         expect(res1.status).toBe(200);
-        expect(res1.body.rsvped).toBe(true);
-        expect(res1.body.count).toBe(1);
+        expect(res1.body.data.rsvped).toBe(true);
+        expect(res1.body.data.count).toBe(1);
 
         // Second RSVP — should un-register (toggle)
         const res2 = await request(app)
@@ -193,8 +195,8 @@ describe('Events API Integration Tests', () => {
             .set('Authorization', authHeader(student));
 
         expect(res2.status).toBe(200);
-        expect(res2.body.rsvped).toBe(false);
-        expect(res2.body.count).toBe(0);
+        expect(res2.body.data.rsvped).toBe(false);
+        expect(res2.body.data.count).toBe(0);
     });
 
     // ── DELETE /api/events/:id ────────────────────────────────────────────────
@@ -213,7 +215,7 @@ describe('Events API Integration Tests', () => {
             .set('Authorization', authHeader(student));
 
         expect(res.status).toBe(200);
-        expect(res.body.message).toBe('Event deleted');
+        expect(res.body.message).toBe('Event deleted successfully');
     });
 
     it('should prevent a non-owner from deleting an event', async () => {
@@ -248,6 +250,6 @@ describe('Events API Integration Tests', () => {
             .set('Authorization', authHeader(adminUser));
 
         expect(res.status).toBe(200);
-        expect(res.body.message).toBe('Event deleted');
+        expect(res.body.message).toBe('Event deleted successfully');
     });
 });

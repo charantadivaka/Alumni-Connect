@@ -17,6 +17,7 @@ jest.mock('../middleware/authMiddleware', () => ({
         };
         next();
     },
+    roleCheck: () => (req, res, next) => next(),
 }));
 
 // Mock Redis to avoid network dependency
@@ -31,11 +32,12 @@ jest.mock('../utils/badgeService', () => ({
 }));
 
 // Routes must be required AFTER mocks are set up
-const jobRoutes = require('../routes/jobRoutes');
+const jobRoutes = require('../modules/jobs/job.routes');
 
 const app = express();
 app.use(express.json());
 app.use('/api/jobs', jobRoutes);
+app.use(require('../middleware/errorMiddleware').errorHandler);
 
 describe('Jobs API Integration Tests', () => {
     let alumniId;
@@ -65,8 +67,8 @@ describe('Jobs API Integration Tests', () => {
             });
         
         expect(res.status).toBe(201);
-        expect(res.body.title).toBe('Software Engineer');
-        expect(res.body.company).toBe('Tech Corp');
+        expect(res.body.data.title).toBe('Software Engineer');
+        expect(res.body.data.company).toBe('Tech Corp');
     });
 
     it('should fetch all active jobs', async () => {
@@ -91,9 +93,8 @@ describe('Jobs API Integration Tests', () => {
             .set('Authorization', alumniId);
         
         expect(res.status).toBe(200);
-        // getAllJobs returns a plain array (not { jobs: [...] })
-        expect(Array.isArray(res.body)).toBe(true);
-        expect(res.body.length).toBe(1);
-        expect(res.body[0].title).toBe('Active Job');
+        expect(Array.isArray(res.body.data.jobs)).toBe(true);
+        expect(res.body.data.jobs.length).toBe(1);
+        expect(res.body.data.jobs[0].title).toBe('Active Job');
     });
 });
