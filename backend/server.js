@@ -1,6 +1,5 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -12,6 +11,11 @@ dotenv.config();
 
 const connectDB = require('./config/db');
 const { errorHandler } = require('./middleware/errorMiddleware');
+const requestId = require('./shared/middleware/requestId');
+const initSocketManager = require('./shared/events/socketManager');
+
+// Initialize Background Workers
+require('./shared/jobs/email.worker');
 
 // Try to load optional performance/monitoring dependencies
 let compression, morgan, logger;
@@ -24,12 +28,7 @@ try {
 }
 
 // ── Controllers that need the io instance ────────────────────────────────────
-const applicationController = require('./controllers/applicationController');
-const mentorshipController = require('./controllers/mentorshipController');
-const interviewController = require('./controllers/interviewController');
-const referralController = require('./controllers/referralController');
-const eventController = require('./controllers/eventController');
-const connectionController = require('./controllers/connectionController');
+// Removed controllers as they no longer need io injection
 
 // ── Connect DB ───────────────────────────────────────────────────────────────
 connectDB();
@@ -38,23 +37,10 @@ const app = express();
 const server = http.createServer(app);
 
 // ── Socket.io ────────────────────────────────────────────────────────────────
-const io = new Server(server, {
-    cors: {
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
-        methods: ['GET', 'POST'],
-        credentials: true,
-    },
-});
-
-// Inject io into controllers that need it
-applicationController.setIo(io);
-mentorshipController.setIo(io);
-interviewController.setIo(io);
-referralController.setIo(io);
-eventController.setIo(io);
-connectionController.setIo(io);
+initSocketManager(server);
 
 // ── Security & Performance ──────────────────────────────────────────────────
+app.use(requestId);                                // attach X-Request-ID to every request
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(mongoSanitize({ replaceWith: '_' }));
 
@@ -96,26 +82,26 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ── API Routes ────────────────────────────────────────────────────────────────
-app.use('/api/auth',          authLimiter, require('./routes/authRoutes'));
-app.use('/api/profile',       require('./routes/profileRoutes'));
-app.use('/api/match',         require('./routes/matchRoutes'));
-app.use('/api/jobs',          require('./routes/jobRoutes'));
-app.use('/api/applications',  require('./routes/applicationRoutes'));
-app.use('/api/slots',         require('./routes/slotRoutes'));
-app.use('/api/mentorship',    require('./routes/mentorshipRoutes'));
-app.use('/api/interviews',    require('./routes/interviewRoutes'));
-app.use('/api/messages',      require('./routes/messageRoutes'));
-app.use('/api/notifications', require('./routes/notificationRoutes'));
-app.use('/api/events',        require('./routes/eventRoutes'));
-app.use('/api/forums',        require('./routes/forumRoutes'));
-app.use('/api/stories',       require('./routes/storyRoutes'));
-app.use('/api/resumes',       require('./routes/resumeRoutes'));
-app.use('/api/referrals',     require('./routes/referralRoutes'));
-app.use('/api/bookmarks',     require('./routes/bookmarkRoutes'));
-app.use('/api/connections',   require('./routes/connectionRoutes'));
-app.use('/api/admin',         require('./routes/adminRoutes'));
-app.use('/api/colleges',      require('./routes/collegeRoutes'));
-app.use('/api/payments',      require('./routes/razorpayRoutes'));
+app.use('/api/auth',          authLimiter, require('./modules/auth/auth.routes'));
+app.use('/api/profile',       require('./modules/profile/profile.routes'));
+app.use('/api/match',         require('./modules/match/match.routes'));
+app.use('/api/jobs',          require('./modules/jobs/job.routes'));
+app.use('/api/applications',  require('./modules/jobs/application.routes'));
+app.use('/api/slots',         require('./modules/mentorship/slot.routes'));
+app.use('/api/mentorship',    require('./modules/mentorship/mentorship.routes'));
+app.use('/api/interviews',    require('./modules/interviews/interview.routes'));
+app.use('/api/messages',      require('./modules/messages/message.routes'));
+app.use('/api/notifications', require('./modules/notifications/notification.routes'));
+app.use('/api/events',        require('./modules/events/event.routes'));
+app.use('/api/forums',        require('./modules/community/forum.routes'));
+app.use('/api/stories',       require('./modules/community/story.routes'));
+app.use('/api/resumes',       require('./modules/resumes/resume.routes'));
+app.use('/api/referrals',     require('./modules/referrals/referral.routes'));
+app.use('/api/bookmarks',     require('./modules/bookmarks/bookmark.routes'));
+app.use('/api/connections',   require('./modules/connections/connection.routes'));
+app.use('/api/admin',         require('./modules/admin/admin.routes'));
+app.use('/api/colleges',      require('./modules/colleges/college.routes'));
+app.use('/api/payments',      require('./modules/payments/payment.routes'));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ message: '🎓 Alumni Network API running' }));
@@ -135,97 +121,7 @@ app.use((req, res) => res.status(404).json({ message: 'Route not found' }));
 // ── Global error handler ──────────────────────────────────────────────────────
 app.use(errorHandler);
 
-// ── Socket.io Real-time Events ────────────────────────────────────────────────
-const onlineUsers = new Map(); // userId → socketId
-
-io.on('connection', (socket) => {
-    console.log(`⚡ Socket connected: ${socket.id}`);
-
-    // User comes online — join their personal room for notifications
-    socket.on('user_online', (userId) => {
-        onlineUsers.set(userId, socket.id);
-        socket.join(userId);                                  // join personal room
-        io.emit('online_users', [...onlineUsers.keys()]);
-        console.log(`👤 ${userId} online`);
-    });
-
-    // Private message (real-time delivery)
-    socket.on('send_message', async ({ senderId, receiverId, text, senderName }) => {
-        try {
-            const Connection = require('./models/Connection');
-            const connection = await Connection.findOne({
-                $or: [
-                    { sender: senderId, receiver: receiverId },
-                    { sender: receiverId, receiver: senderId }
-                ],
-                status: 'Accepted'
-            });
-
-            if (!connection) {
-                console.log(`[Socket] Blocked send_message from ${senderId} to ${receiverId} - not connected.`);
-                return;
-            }
-
-            const payload = { senderId, receiverId, text, senderName, timestamp: new Date().toISOString() };
-            const receiverSocketId = onlineUsers.get(receiverId);
-            if (receiverSocketId) io.to(receiverSocketId).emit('receive_message', payload);
-            socket.emit('message_sent', payload);
-        } catch (error) {
-            console.error('[Socket Error] send_message:', error);
-        }
-    });
-
-    // Typing indicators
-    socket.on('typing',      ({ senderId, receiverId }) => {
-        const s = onlineUsers.get(receiverId);
-        if (s) io.to(s).emit('user_typing', { senderId });
-    });
-    socket.on('stop_typing', ({ senderId, receiverId }) => {
-        const s = onlineUsers.get(receiverId);
-        if (s) io.to(s).emit('user_stop_typing', { senderId });
-    });
-
-    // ── Video Call Signaling (WebRTC) ──────────────────────────────────────────
-    // Alumni initiates a call — relays the WebRTC offer to the student's room
-    socket.on('call_user', ({ userToCall, signal, from, callerName, sessionId, sessionType }) => {
-        io.to(userToCall).emit('incoming_call', { signal, from, callerName, sessionId, sessionType });
-    });
-
-    // Student accepts — relays the WebRTC answer back to the alumni's room
-    socket.on('answer_call', ({ to, signal }) => {
-        io.to(to).emit('call_accepted', { signal });
-    });
-
-    // ICE candidate trickling (both directions)
-    socket.on('ice_candidate', ({ to, candidate }) => {
-        io.to(to).emit('ice_candidate', { candidate });
-    });
-
-    // Either party hangs up
-    socket.on('end_call', ({ to }) => {
-        io.to(to).emit('call_ended');
-    });
-
-    // Alumni starts/stops recording — shows indicator to the student
-    socket.on('recording_started', ({ to }) => {
-        io.to(to).emit('recording_started');
-    });
-    socket.on('recording_stopped', ({ to }) => {
-        io.to(to).emit('recording_stopped');
-    });
-
-    // Disconnect
-    socket.on('disconnect', () => {
-        for (const [uid, sid] of onlineUsers.entries()) {
-            if (sid === socket.id) {
-                onlineUsers.delete(uid);
-                io.emit('online_users', [...onlineUsers.keys()]);
-                console.log(`❌ ${uid} offline`);
-                break;
-            }
-        }
-    });
-});
+// ── Socket.io logic moved to shared/events/socketManager.js ─────────────────
 
 // ── Startup Warnings ─────────────────────────────────────────────────────────
 if (!process.env.CLOUDINARY_CLOUD_NAME) {

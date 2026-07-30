@@ -31,11 +31,11 @@ const Forum = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [thrs, bks] = await Promise.all([
+        const [thrsRes, bks] = await Promise.all([
           forumService.getAll(filterCat ? { category: filterCat } : {}),
           bookmarkService.getAll('Forum')
         ]);
-        setThreads(thrs);
+        setThreads(thrsRes.threads || thrsRes || []);
         setBookmarks(new Set(bks.map(b => b.refId)));
       } catch (err) {
         setError(err.message || 'Failed to load forum threads.');

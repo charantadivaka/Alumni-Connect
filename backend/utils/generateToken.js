@@ -1,16 +1,17 @@
 const jwt = require('jsonwebtoken');
 
-const generateToken = (res, userId) => {
-    const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+/**
+ * Generate a signed JWT for the given userId.
+ * Pure function — does NOT set any cookie.
+ * Cookie-setting is handled by the controller (setTokenCookie).
+ *
+ * @param {string|ObjectId} userId - The user's MongoDB _id
+ * @returns {string} Signed JWT token
+ */
+const generateToken = (userId) => {
+    return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
         expiresIn: '30d',
     });
-    res.cookie('jwt', token, {
-        httpOnly: true,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-    return token;
 };
 
 module.exports = generateToken;

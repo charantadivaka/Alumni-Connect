@@ -42,7 +42,7 @@ const JobBoard = () => {
           jobService.getAll(),
           bookmarkService.getAll('Job')
         ]);
-        setJobs(jobsData);
+        setJobs(jobsData.jobs || jobsData || []);
         setBookmarks(new Set(bks.map(b => b.refId)));
       } catch (err) {
         setError(err.message);

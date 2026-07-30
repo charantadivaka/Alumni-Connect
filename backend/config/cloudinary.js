@@ -1,9 +1,10 @@
-const cloudinary = require('cloudinary').v2;
+const cloudinaryLib = require('cloudinary').v2;
+const { cloudinary: cloudinaryConfig } = require('../shared/config');
 
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+cloudinaryLib.config({
+    cloud_name: cloudinaryConfig.cloudName,
+    api_key:    cloudinaryConfig.apiKey,
+    api_secret: cloudinaryConfig.apiSecret,
 });
 
-module.exports = cloudinary;
+module.exports = cloudinaryLib;

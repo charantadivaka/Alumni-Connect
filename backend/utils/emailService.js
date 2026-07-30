@@ -1,5 +1,7 @@
 const nodemailer = require('nodemailer');
 
+const { emailQueue } = require('../shared/jobs/email.queue');
+
 /**
  * Creates a nodemailer transporter.
  * In development (no SMTP credentials), falls back to Ethereal (catch-all test inbox).
@@ -34,12 +36,9 @@ const createTransporter = async () => {
 };
 
 /**
- * Sends an OTP verification email.
- * @param {string} toEmail  Recipient email
- * @param {string} otp      6-digit OTP string
- * @param {string} name     Recipient's name for personalisation
+ * Internal worker function: Sends an OTP verification email.
  */
-const sendOtpEmail = async (toEmail, otp, name = 'there') => {
+const _sendOtpEmail = async (toEmail, otp, name = 'there') => {
     const transporter = await createTransporter();
 
     const html = `
@@ -116,13 +115,12 @@ const sendOtpEmail = async (toEmail, otp, name = 'there') => {
     return info;
 };
 
+
+
 /**
- * Sends a password reset email.
- * @param {string} toEmail    Recipient email
- * @param {string} resetLink  Full URL with reset token
- * @param {string} name       Recipient's name
+ * Internal worker function: Sends a password reset email.
  */
-const sendPasswordResetEmail = async (toEmail, resetLink, name = 'there') => {
+const _sendPasswordResetEmail = async (toEmail, resetLink, name = 'there') => {
     const transporter = await createTransporter();
 
     const html = `
@@ -192,10 +190,12 @@ const sendPasswordResetEmail = async (toEmail, resetLink, name = 'there') => {
     return info;
 };
 
+
+
 /**
- * Sends an email when a mentorship session is accepted.
+ * Internal worker function: Sends an email when a mentorship session is accepted.
  */
-const sendMentorshipAcceptedEmail = async (studentEmail, studentName, alumniName, topic) => {
+const _sendMentorshipAcceptedEmail = async (studentEmail, studentName, alumniName, topic) => {
     if (!process.env.SMTP_USER) return; // only fire if SMTP is configured
     try {
         const transporter = await createTransporter();
@@ -214,9 +214,9 @@ const sendMentorshipAcceptedEmail = async (studentEmail, studentName, alumniName
 };
 
 /**
- * Sends an email to alumni when a student applies for their job.
+ * Internal worker function: Sends an email to alumni when a student applies for their job.
  */
-const sendJobApplicationEmail = async (alumniEmail, alumniName, studentName, jobTitle) => {
+const _sendJobApplicationEmail = async (alumniEmail, alumniName, studentName, jobTitle) => {
     if (!process.env.SMTP_USER) return; // only fire if SMTP is configured
     try {
         const transporter = await createTransporter();
@@ -234,4 +234,42 @@ const sendJobApplicationEmail = async (alumniEmail, alumniName, studentName, job
     }
 };
 
-module.exports = { sendOtpEmail, sendPasswordResetEmail, sendMentorshipAcceptedEmail, sendJobApplicationEmail, createTransporter };
+// ── Wrapper Enqueuer Functions ──────────────────────────────────────────────
+
+const sendOtpEmail = async (toEmail, otp, name = 'there') => {
+    if (emailQueue) {
+        await emailQueue.add('sendOtpEmail', { type: 'OTP', payload: { toEmail, otp, name } });
+    } else {
+        await _sendOtpEmail(toEmail, otp, name);
+    }
+};
+
+const sendPasswordResetEmail = async (toEmail, resetLink, name = 'there') => {
+    if (emailQueue) {
+        await emailQueue.add('sendPasswordResetEmail', { type: 'RESET_PASSWORD', payload: { toEmail, resetLink, name } });
+    } else {
+        await _sendPasswordResetEmail(toEmail, resetLink, name);
+    }
+};
+
+const sendMentorshipAcceptedEmail = async (studentEmail, studentName, alumniName, topic) => {
+    if (emailQueue) {
+        await emailQueue.add('sendMentorshipAcceptedEmail', { type: 'MENTORSHIP_ACCEPTED', payload: { studentEmail, studentName, alumniName, topic } });
+    } else {
+        await _sendMentorshipAcceptedEmail(studentEmail, studentName, alumniName, topic);
+    }
+};
+
+const sendJobApplicationEmail = async (alumniEmail, alumniName, studentName, jobTitle) => {
+    if (emailQueue) {
+        await emailQueue.add('sendJobApplicationEmail', { type: 'JOB_APPLICATION', payload: { alumniEmail, alumniName, studentName, jobTitle } });
+    } else {
+        await _sendJobApplicationEmail(alumniEmail, alumniName, studentName, jobTitle);
+    }
+};
+
+module.exports = {
+    sendOtpEmail, sendPasswordResetEmail, sendMentorshipAcceptedEmail, sendJobApplicationEmail,
+    _sendOtpEmail, _sendPasswordResetEmail, _sendMentorshipAcceptedEmail, _sendJobApplicationEmail,
+    createTransporter
+};

@@ -89,8 +89,8 @@ const OtpVerification = ({ email, role, onBack }) => {
     setError('');
     setLoading(true);
     try {
-      const data = await authService.verifyOtp({ email, otp });
-      login(data);
+      const { user } = await authService.verifyOtp({ email, otp });
+      login(user);
       navigate(role === 'alumni' ? '/alumni/dashboard' : '/student/dashboard', { replace: true });
     } catch (err) {
       setError(err.message || 'Verification failed. Please try again.');

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PublicNavbar } from '../../components/layout/PublicNavbar';
 import '../../styles/Home/CollegeRegister.css';
+import { api } from '../../services/api';
 
-const API_BASE = '/api';
 const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
 
 // ── Razorpay Script Loader ───────────────────────────────────────────────────
@@ -79,15 +79,14 @@ const FeeStatusChecker = () => {
     setResult(null);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/colleges/fee-status?name=${encodeURIComponent(query.trim())}`);
-      const data = await res.json();
-      if (!res.ok || !data.found) {
-        setError(data.message || 'College not found.');
+      const data = await api.get(`/colleges/fee-status?name=${encodeURIComponent(query.trim())}`);
+      if (!data?.found) {
+        setError(data?.message || 'College not found.');
       } else {
         setResult(data);
       }
-    } catch {
-      setError('Could not reach the server. Please try again.');
+    } catch (err) {
+      setError(err.message || 'Could not reach the server. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -260,16 +259,11 @@ const CollegeRegister = () => {
       const sdkLoaded = await loadRazorpay();
       if (!sdkLoaded) throw new Error('Failed to load Razorpay SDK. Check your internet connection.');
 
-      const orderRes = await fetch(`${API_BASE}/payments/create-order`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          collegeName: form.collegeName.trim(), rollNumberPattern: form.rollNumberPattern,
-          exampleFormat: form.exampleFormat, patternDescription: form.patternDescription,
-          registrantEmail: form.registrantEmail,
-        }),
+      const orderData = await api.post('/payments/create-order', {
+        collegeName: form.collegeName.trim(), rollNumberPattern: form.rollNumberPattern,
+        exampleFormat: form.exampleFormat, patternDescription: form.patternDescription,
+        registrantEmail: form.registrantEmail,
       });
-      const orderData = await orderRes.json();
-      if (!orderRes.ok) throw new Error(orderData.message || 'Failed to create payment order.');
 
       const options = {
         key: orderData.keyId || RAZORPAY_KEY,
@@ -282,19 +276,14 @@ const CollegeRegister = () => {
         modal: { ondismiss: () => { setLoading(false); setError('Payment was cancelled. Please try again.'); } },
         handler: async (response) => {
           try {
-            const verifyRes = await fetch(`${API_BASE}/payments/verify`, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                collegeName: form.collegeName.trim(), rollNumberPattern: form.rollNumberPattern,
-                exampleFormat: form.exampleFormat, patternDescription: form.patternDescription,
-                registrantEmail: form.registrantEmail,
-              }),
+            const verifyData = await api.post('/payments/verify', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              collegeName: form.collegeName.trim(), rollNumberPattern: form.rollNumberPattern,
+              exampleFormat: form.exampleFormat, patternDescription: form.patternDescription,
+              registrantEmail: form.registrantEmail,
             });
-            const verifyData = await verifyRes.json();
-            if (!verifyRes.ok) throw new Error(verifyData.message);
             setSuccess({ collegeName: verifyData.college.name, feePaidUntil: verifyData.college.feePaidUntil, paymentId: response.razorpay_payment_id });
             setStep(3);
           } catch (e) {

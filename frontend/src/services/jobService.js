@@ -8,19 +8,18 @@ const q = (p) => {
 export const jobService = {
   getAll:    (filters = {}) => api.get(`/jobs${q(filters)}`),
   getById:   (id)           => api.get(`/jobs/${id}`),
-  getMy:     ()             => api.get('/jobs/my'),
+  getMy:     ()             => api.get('/jobs/my/posts'),
   create:    (data)         => api.post('/jobs', data),
   update:    (id, data)     => api.put(`/jobs/${id}`, data),
-  toggle:    (id)           => api.put(`/jobs/${id}/toggle`),
+  toggle:    (id)           => api.put(`/jobs/${id}/toggle-status`),
   remove:    (id)           => api.delete(`/jobs/${id}`),
-  report:    (id)           => api.put(`/jobs/${id}/report`),
+  report:    (id)           => api.post(`/jobs/${id}/report`),
 };
 
 export const applicationService = {
-  apply:          (data)         => api.post('/applications', data),
-  getMy:          ()             => api.get('/applications/my'),
-  getAlumni:      ()             => api.get('/applications/alumni'),
-  getForJob:      (jobId)        => api.get(`/applications/job/${jobId}`),
-  updateStage:    (id, data)     => api.put(`/applications/${id}/stage`, data),
-  withdraw:       (id)           => api.delete(`/applications/${id}`),
+  getMy: (jobId) => api.get(`/applications/my${jobId ? `?jobId=${jobId}` : ''}`),
+  getAlumni: () => api.get('/applications/alumni-all'),
+  apply: (jobId, data) => api.post('/applications/apply', { jobId, ...data }),
+  withdraw: (id) => api.put(`/applications/${id}/withdraw`),
+  updateStage: (id, data) => api.put(`/applications/${id}/stage`, data),
 };

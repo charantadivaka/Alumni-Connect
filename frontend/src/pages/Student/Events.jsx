@@ -24,7 +24,7 @@ const StudentEvents = () => {
           eventService.getAll(),
           bookmarkService.getAll('Event')
         ]);
-        setEvents(evs);
+        setEvents(data.events || data || []);
         setBookmarks(new Set(bks.map(b => b.refId)));
       } catch (err) {
         setError(err.message || 'Failed to load events.');
@@ -42,7 +42,8 @@ const StudentEvents = () => {
     if (!form.title || !form.date || !form.description) { alert('Title, Date, and Description are required.'); return; }
     try {
       setCreating(true);
-      const newEvent = await eventService.create(form);
+      const payload = { ...form, date: new Date(form.date).toISOString() };
+      const newEvent = await eventService.create(payload);
       setEvents(prev => [newEvent, ...prev]);
       setForm({ title: '', description: '', category: 'Hackathon', date: '', location: 'Online', link: '' });
       setShowForm(false);

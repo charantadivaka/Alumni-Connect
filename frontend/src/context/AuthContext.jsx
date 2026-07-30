@@ -11,15 +11,17 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  // Verify session on mount
+  // Verify session on mount — GET /api/auth/me returns the user directly (api.js unwraps envelope)
   useEffect(() => {
     const verify = async () => {
       try {
         const res = await fetch('/api/auth/me', { credentials: 'include' });
         if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-          localStorage.setItem('alumni_user', JSON.stringify(data));
+          const json = await res.json();
+          // Backend returns { success, data: <user> } — unwrap manually since we're using raw fetch here
+          const userData = json?.data ?? json;
+          setUser(userData);
+          localStorage.setItem('alumni_user', JSON.stringify(userData));
         } else {
           setUser(null);
           localStorage.removeItem('alumni_user');

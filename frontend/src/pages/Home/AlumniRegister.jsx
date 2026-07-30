@@ -34,7 +34,7 @@ const AlumniRegister = () => {
 
   // Fetch colleges on mount
   useEffect(() => {
-    collegeService.getAll().then(data => setColleges(data)).catch(() => {});
+    collegeService.getAll().then(res => setColleges(Array.isArray(res) ? res : [])).catch(() => {});
   }, []);
 
   // Live-validate roll number whenever roll no. or selected college changes

@@ -19,9 +19,9 @@ const Login = () => {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      const data = await authService.login(form);
-      login(data);
-      navigate(`/${data.role}/dashboard`);
+      const { user } = await authService.login(form);
+      login(user);
+      navigate(`/${user.role}/dashboard`);
     } catch (err) {
       setError(err.message);
     } finally {

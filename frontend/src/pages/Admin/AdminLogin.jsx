@@ -20,8 +20,8 @@ const AdminLogin = () => {
     setError('');
     setLoading(true);
     try {
-      const data = await authService.adminLogin(form);
-      login(data);
+      const { user } = await authService.adminLogin(form);
+      login(user);
       navigate('/admin/dashboard');
     } catch (err) {
       setError(err.message);

@@ -1,4 +1,5 @@
 let redisClient = null;
+const { redis: redisConfig, server: serverConfig } = require('../shared/config');
 
 const createDummyClient = () => {
     return {
@@ -20,10 +21,10 @@ const createDummyClient = () => {
 
 try {
     const Redis = require('ioredis');
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = serverConfig.isProduction;
     
     // If no REDIS_URL is provided in development, silently bypass to avoid ECONNREFUSED spam
-    if (!process.env.REDIS_URL && !isProduction) {
+    if (!redisConfig.url && !isProduction) {
         console.log('📦 Redis not configured. Caching is disabled for development.');
         redisClient = createDummyClient();
     } else {
@@ -41,7 +42,7 @@ try {
             redisClient = createDummyClient();
         };
 
-        redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+        redisClient = new Redis(redisConfig.url || 'redis://localhost:6379', {
             maxRetriesPerRequest: null,
             enableReadyCheck: false,
             retryStrategy: (times) => {

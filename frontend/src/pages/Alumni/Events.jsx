@@ -20,7 +20,7 @@ const AlumniEvents = () => {
     const fetchEvents = async () => {
       try {
         const data = await eventService.getAll();
-        setEvents(data);
+        setEvents(data.events || data || []);
       } catch (err) {
         setError(err.message || 'Failed to load events.');
       } finally {
@@ -37,7 +37,8 @@ const AlumniEvents = () => {
     if (!form.title || !form.date || !form.description) { alert('Title, Date, and Description are required.'); return; }
     try {
       setCreating(true);
-      const newEvent = await eventService.create(form);
+      const payload = { ...form, date: new Date(form.date).toISOString() };
+      const newEvent = await eventService.create(payload);
       setEvents(prev => [newEvent, ...prev]);
       setForm({ title: '', description: '', category: 'Webinar', date: '', location: 'Online', link: '' });
       setShowForm(false);

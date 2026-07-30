@@ -24,12 +24,12 @@ export const adminService = {
     const q = Object.entries(filters).filter(([,v])=>v).map(([k,v])=>`${k}=${v}`).join('&');
     return api.get(`/admin/users${q ? '?'+q : ''}`);
   },
-  getQueue:          ()             => api.get('/admin/verification-queue'),
+  getQueue:          ()             => api.get('/admin/verifications'),
   verifyAlumni:      (id, data)     => api.put(`/admin/users/${id}/verify`, data),
   toggleSuspend:     (id)           => api.put(`/admin/users/${id}/suspend`),
   getAnalytics:      ()             => api.get('/admin/analytics'),
-  getReportedJobs:   ()             => api.get('/admin/jobs/reported'),
-  getReportedEvents: ()             => api.get('/admin/events/reported'),
+  getReportedJobs:   ()             => api.get('/admin/reports/jobs'),
+  getReportedEvents: ()             => api.get('/admin/reports/events'),
 };
 
 export const aiService = {
@@ -39,6 +39,7 @@ export const aiService = {
 export const connectionService = {
   request:     (userId)       => api.post(`/connections/request/${userId}`),
   getMy:       ()             => api.get('/connections/my'),
-  respond:     (id, data)     => api.put(`/connections/${id}/respond`, data),
+  getStudents: ()             => api.get('/connections/students'),
+  respond:     (id, data)     => api.put(`/connections/respond/${id}`, data),
   remove:      (id)           => api.delete(`/connections/${id}`),
 };

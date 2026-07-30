@@ -36,7 +36,9 @@ const AlumniTab = () => {
     setLoading(true);
     try {
       const [result, conns] = await Promise.all([
-        matchService.getMatches(debouncedFilters),
+        user.role === 'alumni' 
+          ? matchService.getDirectory(debouncedFilters) 
+          : matchService.getMatches(debouncedFilters),
         connectionService.getMy(),
       ]);
       if (result && typeof result === 'object' && 'alumni' in result) {
@@ -261,7 +263,7 @@ const StudentsTab = () => {
     const fetchData = async () => {
       try {
         const [studentsRes, conns] = await Promise.all([
-          api.get('/connections/students-directory'),
+          api.get('/connections/students'),
           connectionService.getMy(),
         ]);
         setStudents(studentsRes.students || studentsRes || []);

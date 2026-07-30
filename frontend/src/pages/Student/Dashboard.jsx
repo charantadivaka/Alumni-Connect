@@ -60,7 +60,7 @@ const Dashboard = () => {
           interviewService.getMy(),
           connectionService.getMy(),
         ]);
-        setJobs(jobsData.slice(0, 4));
+        setJobs((jobsData.jobs || jobsData || []).slice(0, 4));
         setMentorships(mentorshipsData.filter(m => m.status === 'Accepted').slice(0, 4));
         setInterviews(interviewsData.filter(i => i.status === 'Accepted').slice(0, 4));
         setConnections(connsData.filter(c => c.receiver?._id === user._id && c.status === 'Pending'));

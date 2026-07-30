@@ -110,7 +110,7 @@ const AlumniProfile = () => {
       const reader = new FileReader();
       reader.onloadend = async () => {
         try {
-          const result = await profileService.uploadPicture({ imageData: reader.result });
+          const result = await profileService.uploadPicture({ image: reader.result });
           setProfile(prev => ({ ...prev, profilePicture: result.profilePicture }));
           setSuccess('Profile picture updated!');
           setTimeout(() => setSuccess(''), 4000);

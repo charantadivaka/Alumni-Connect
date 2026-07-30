@@ -5,7 +5,7 @@ export const eventService = {
   create:  (data)         => api.post('/events', data),
   rsvp:    (id)           => api.put(`/events/${id}/rsvp`),
   remove:  (id)           => api.delete(`/events/${id}`),
-  report:  (id)           => api.put(`/events/${id}/report`),
+  report:  (id)           => api.post(`/events/${id}/report`),
 };
 
 export const forumService = {

@@ -21,7 +21,7 @@ const StudentStories = () => {
           storyService.getAll(),
           bookmarkService.getAll('Story')
         ]);
-        setStories(stors);
+        setStories(stors.stories || stors || []);
         setBookmarks(new Set(bks.map(b => b.refId)));
       } catch (err) {
         setError(err.message || 'Failed to load stories.');

@@ -1,94 +1,107 @@
-const { body, validationResult } = require('express-validator');
+const { z } = require('zod');
 
 /**
- * Middleware that reads express-validator errors and returns a 400 if any exist.
+ * Middleware that parses and validates req.body, req.query, req.params using Zod.
  */
-const handleValidationErrors = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        const firstError = errors.array()[0];
-        return res.status(400).json({ message: firstError.msg, errors: errors.array() });
+const validateZod = (schema) => (req, res, next) => {
+    try {
+        schema.parse({
+            body: req.body,
+            query: req.query,
+            params: req.params,
+        });
+        next();
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ 
+                message: err.errors[0].message, 
+                errors: err.errors 
+            });
+        }
+        next(err);
     }
-    next();
 };
 
-// ── Rule Sets ─────────────────────────────────────────────────────────────────
+// ── Rule Sets (Zod Schemas) ──────────────────────────────────────────────────
 
-const validateLogin = [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-    body('password').notEmpty().withMessage('Password is required'),
-    handleValidationErrors,
-];
+const validateLogin = validateZod(z.object({
+    body: z.object({
+        email: z.string().email('Valid email is required'),
+        password: z.string().min(1, 'Password is required')
+    })
+}));
 
-const validateSendOtp = [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-    body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be 2–100 characters'),
-    body('password')
-        .isLength({ min: 6, max: 128 })
-        .withMessage('Password must be 6–128 characters'),
-    body('role').isIn(['student', 'alumni']).withMessage('Role must be student or alumni'),
-    handleValidationErrors,
-];
+const validateSendOtp = validateZod(z.object({
+    body: z.object({
+        email: z.string().email('Valid email is required'),
+        name: z.string().min(2, 'Name must be 2–100 characters').max(100, 'Name must be 2–100 characters'),
+        password: z.string().min(6, 'Password must be 6–128 characters').max(128, 'Password must be 6–128 characters'),
+        role: z.enum(['student', 'alumni'], { errorMap: () => ({ message: 'Role must be student or alumni' }) })
+    })
+}));
 
-const validateForgotPassword = [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-    handleValidationErrors,
-];
+const validateForgotPassword = validateZod(z.object({
+    body: z.object({
+        email: z.string().email('Valid email is required')
+    })
+}));
 
-const validateResetPassword = [
-    body('token').notEmpty().withMessage('Reset token is required'),
-    body('password')
-        .isLength({ min: 6, max: 128 })
-        .withMessage('New password must be 6–128 characters'),
-    handleValidationErrors,
-];
+const validateResetPassword = validateZod(z.object({
+    body: z.object({
+        token: z.string().min(1, 'Reset token is required'),
+        newPassword: z.string().min(6, 'New password must be 6–128 characters').max(128, 'New password must be 6–128 characters')
+    })
+}));
 
-const validateChangePassword = [
-    body('currentPassword').notEmpty().withMessage('Current password is required'),
-    body('newPassword')
-        .isLength({ min: 6, max: 128 })
-        .withMessage('New password must be 6–128 characters'),
-    handleValidationErrors,
-];
+const validateChangePassword = validateZod(z.object({
+    body: z.object({
+        currentPassword: z.string().min(1, 'Current password is required'),
+        newPassword: z.string().min(6, 'New password must be 6–128 characters').max(128, 'New password must be 6–128 characters')
+    })
+}));
 
-const validateCreateJob = [
-    body('title').trim().isLength({ min: 3, max: 200 }).withMessage('Job title must be 3–200 characters'),
-    body('company').trim().isLength({ min: 1, max: 200 }).withMessage('Company name is required'),
-    body('description').trim().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
-    body('jobType')
-        .optional()
-        .isIn(['Full-time', 'Part-time', 'Internship', 'Contract', 'Remote'])
-        .withMessage('Invalid job type'),
-    handleValidationErrors,
-];
+const validateCreateJob = validateZod(z.object({
+    body: z.object({
+        title: z.string().min(3, 'Job title must be 3–200 characters').max(200, 'Job title must be 3–200 characters'),
+        company: z.string().min(1, 'Company name is required').max(200, 'Company name is required'),
+        description: z.string().min(10, 'Description must be at least 10 characters'),
+        jobType: z.enum(['Full-time', 'Part-time', 'Internship', 'Contract', 'Remote'], {
+            errorMap: () => ({ message: 'Invalid job type' })
+        }).optional()
+    })
+}));
 
-const validateRequestSession = [
-    body('alumniId').isMongoId().withMessage('Valid alumni ID is required'),
-    body('topic').trim().isLength({ min: 3, max: 300 }).withMessage('Topic must be 3–300 characters'),
-    handleValidationErrors,
-];
+const validateRequestSession = validateZod(z.object({
+    body: z.object({
+        alumniId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Valid alumni ID is required'),
+        topic: z.string().min(3, 'Topic must be 3–300 characters').max(300, 'Topic must be 3–300 characters')
+    })
+}));
 
-const validateCreateThread = [
-    body('title').trim().isLength({ min: 3, max: 300 }).withMessage('Thread title must be 3–300 characters'),
-    body('content').trim().isLength({ min: 10 }).withMessage('Content must be at least 10 characters'),
-    handleValidationErrors,
-];
+const validateCreateThread = validateZod(z.object({
+    body: z.object({
+        title: z.string().min(3, 'Thread title must be 3–300 characters').max(300, 'Thread title must be 3–300 characters'),
+        content: z.string().min(10, 'Content must be at least 10 characters')
+    })
+}));
 
-const validateCreateEvent = [
-    body('title').trim().isLength({ min: 3, max: 200 }).withMessage('Event title must be 3–200 characters'),
-    body('description').trim().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
-    body('date').isISO8601().toDate().withMessage('Valid event date is required'),
-    handleValidationErrors,
-];
+const validateCreateEvent = validateZod(z.object({
+    body: z.object({
+        title: z.string().min(3, 'Event title must be 3–200 characters').max(200, 'Event title must be 3–200 characters'),
+        description: z.string().min(10, 'Description must be at least 10 characters'),
+        date: z.string().datetime({ message: 'Valid event date is required (ISO8601)' })
+    })
+}));
 
-const validateCreateStory = [
-    body('title').trim().isLength({ min: 3, max: 200 }).withMessage('Story title must be 3–200 characters'),
-    body('content').trim().isLength({ min: 30 }).withMessage('Story content must be at least 30 characters'),
-    handleValidationErrors,
-];
+const validateCreateStory = validateZod(z.object({
+    body: z.object({
+        title: z.string().min(3, 'Story title must be 3–200 characters').max(200, 'Story title must be 3–200 characters'),
+        content: z.string().min(30, 'Story content must be at least 30 characters')
+    })
+}));
 
 module.exports = {
-    handleValidationErrors,
+    validateZod,
     validateLogin,
     validateSendOtp,
     validateForgotPassword,
