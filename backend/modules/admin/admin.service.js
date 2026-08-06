@@ -17,19 +17,23 @@ const Forum         = require('../../models/Forum');
 const JobApplication = require('../../models/JobApplication');
 const AuditLog      = require('../../models/AuditLog');
 const { invalidatePattern } = require('../../config/redis');
+const { escapeRegex }       = require('../../shared/utils/escapeRegex');
 
-const ANALYTICS_CACHE_PATTERN = '__express__/api/admin/analytics*';
-const MATCH_CACHE_PATTERN     = '__express__/api/match*';
+const ANALYTICS_CACHE_PATTERN = '__express__:*:/api/admin/analytics*';
+const MATCH_CACHE_PATTERN     = '__express__:*:/api/match*';
 
 /** Get all users with optional role/search/status filters. */
 const getAllUsers = async ({ role, search, status }) => {
     const filter = {};
     if (role)   filter.role = role;
     if (status === 'suspended') filter.isSuspended = true;
-    if (search) filter.$or = [
-        { name:  { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-    ];
+    if (search) {
+        const safe = escapeRegex(search);
+        filter.$or = [
+            { name:  { $regex: safe, $options: 'i' } },
+            { email: { $regex: safe, $options: 'i' } },
+        ];
+    }
     return User.find(filter).select('-password').sort({ createdAt: -1 });
 };
 

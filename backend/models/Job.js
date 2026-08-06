@@ -34,6 +34,6 @@ const jobSchema = new mongoose.Schema({
 
 // Indexes for performance
 jobSchema.index({ isActive: 1, createdAt: -1 });
-jobSchema.index({ 'reports.0': 1 }); // Index for finding reported jobs
+jobSchema.index({ reports: 1 });           // Finds jobs with any reports (replaces ineffective 'reports.0' index)
 
 module.exports = mongoose.model('Job', jobSchema);

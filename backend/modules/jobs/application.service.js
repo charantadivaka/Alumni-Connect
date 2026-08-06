@@ -64,7 +64,9 @@ const getMyApplications = async (userId) => {
 /** Get applications for a specific job (alumni who posted it only). */
 const getJobApplications = async (jobId, requestingUser) => {
     const job = await Job.findById(jobId);
-    if (!job || job.postedBy.toString() !== requestingUser._id.toString()) {
+    if (!job) throw Object.assign(new Error('Job not found'), { statusCode: 404 });
+
+    if (job.postedBy.toString() !== requestingUser._id.toString() && requestingUser.role !== 'admin') {
         throw Object.assign(new Error('Not authorized'), { statusCode: 403 });
     }
 

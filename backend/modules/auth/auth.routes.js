@@ -9,8 +9,8 @@ const validate = require('../../middleware/validate');
 // Public routes
 router.post('/register', validate.validateSendOtp, authController.register); // Legacy
 router.post('/send-otp', validate.validateSendOtp, authController.sendOtp);
-router.post('/verify-otp', authController.verifyOtp);
-router.post('/resend-otp', authController.resendOtp);
+router.post('/verify-otp', validate.validateVerifyOtp, authController.verifyOtp);
+router.post('/resend-otp', validate.validateResendOtp, authController.resendOtp);
 router.post('/login', validate.validateLogin, authController.login);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);

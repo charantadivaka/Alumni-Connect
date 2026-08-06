@@ -24,7 +24,7 @@ const StudentEvents = () => {
           eventService.getAll(),
           bookmarkService.getAll('Event')
         ]);
-        setEvents(data.events || data || []);
+        setEvents(evs.events || evs || []);
         setBookmarks(new Set(bks.map(b => b.refId)));
       } catch (err) {
         setError(err.message || 'Failed to load events.');

@@ -12,7 +12,7 @@ const College = require('../../models/College');
 const { invalidatePattern } = require('../../config/redis');
 const { cloudinary: cloudinaryConfig } = require('../../shared/config');
 
-const MATCH_CACHE_PATTERN = '__express__/api/match*';
+const MATCH_CACHE_PATTERN = '__express__:*:/api/match*';
 
 /** Get the requesting user's full profile. */
 const getMyProfile = async (userId) => {
@@ -87,6 +87,16 @@ const updateProfile = async (userId, updates) => {
  */
 const uploadPicture = async (userId, imageData) => {
     if (!imageData) throw Object.assign(new Error('No image data provided'), { statusCode: 400 });
+
+    if (!imageData.startsWith('data:image/')) {
+        throw Object.assign(new Error('Invalid image format. Only image files are accepted.'), { statusCode: 400 });
+    }
+    const [header] = imageData.split(',');
+    const mime = header.replace('data:', '').replace(';base64', '');
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(mime)) {
+        throw Object.assign(new Error('Only JPEG, PNG, WebP, and GIF images are accepted.'), { statusCode: 400 });
+    }
 
     let finalImageUrl = imageData;
 

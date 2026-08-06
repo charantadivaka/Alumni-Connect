@@ -6,38 +6,39 @@ const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
-  const socketRef = useRef(null);
+  const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
     if (!user) {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
       }
       return;
     }
 
     // Connect to server (Vite proxy handles /socket.io)
-    socketRef.current = io('/', { withCredentials: true });
+    const newSocket = io('/', { withCredentials: true });
+    setSocket(newSocket);
 
-    socketRef.current.on('connect', () => {
-      socketRef.current.emit('user_online', user._id);
+    newSocket.on('connect', () => {
+      newSocket.emit('user_online', user._id);
     });
 
-    socketRef.current.on('online_users', (users) => {
+    newSocket.on('online_users', (users) => {
       setOnlineUsers(users);
     });
 
     return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+      newSocket.disconnect();
     };
   }, [user]);
 
   const isOnline = (userId) => onlineUsers.includes(userId);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, onlineUsers, isOnline }}>
+    <SocketContext.Provider value={{ socket, onlineUsers, isOnline }}>
       {children}
     </SocketContext.Provider>
   );

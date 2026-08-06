@@ -10,7 +10,7 @@ const Story = require('../../models/Story');
 const { invalidatePattern } = require('../../config/redis');
 const { checkAndAwardBadges } = require('../../utils/badgeService');
 
-const STORY_CACHE_PATTERN = '__express__/api/stories*';
+const STORY_CACHE_PATTERN = '__express__:*:/api/stories*';
 
 /** Get all published stories (filtered by college if user is student/alumni). */
 const getStories = async (user, query) => {

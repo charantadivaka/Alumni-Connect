@@ -23,14 +23,18 @@ const initSocketManager = (server) => {
         console.log(`⚡ Socket connected: ${socket.id}`);
 
         socket.on('user_online', (userId) => {
+            socket.userId = userId; // Store verified ID on socket
             onlineUsers.set(userId, socket.id);
             socket.join(userId);
             io.emit('online_users', [...onlineUsers.keys()]);
             console.log(`👤 ${userId} online`);
         });
 
-        socket.on('send_message', async ({ senderId, receiverId, text, senderName }) => {
+        socket.on('send_message', async ({ receiverId, text, senderName }) => {
             try {
+                const senderId = socket.userId;
+                if (!senderId) return;
+
                 const Connection = require('../../models/Connection');
                 const connection = await Connection.findOne({
                     $or: [
@@ -54,12 +58,16 @@ const initSocketManager = (server) => {
             }
         });
 
-        socket.on('typing', ({ senderId, receiverId }) => {
+        socket.on('typing', ({ receiverId }) => {
+            const senderId = socket.userId;
+            if (!senderId) return;
             const s = onlineUsers.get(receiverId);
             if (s) io.to(s).emit('user_typing', { senderId });
         });
 
-        socket.on('stop_typing', ({ senderId, receiverId }) => {
+        socket.on('stop_typing', ({ receiverId }) => {
+            const senderId = socket.userId;
+            if (!senderId) return;
             const s = onlineUsers.get(receiverId);
             if (s) io.to(s).emit('user_stop_typing', { senderId });
         });

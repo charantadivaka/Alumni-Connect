@@ -10,7 +10,7 @@ const Event = require('../../models/Event');
 const { invalidatePattern } = require('../../config/redis');
 const { checkAndAwardBadges } = require('../../utils/badgeService');
 
-const EVENT_CACHE_PATTERN = '__express__/api/events*';
+const EVENT_CACHE_PATTERN = '__express__:*:/api/events*';
 
 /** Build filter scoped to user's college (admins see all). */
 const buildEventFilter = (user, category) => {

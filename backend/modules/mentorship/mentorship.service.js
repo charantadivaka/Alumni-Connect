@@ -12,7 +12,7 @@ const Mentorship = require('../../models/Mentorship');
 const MentorSlot = require('../../models/MentorSlot');
 const User = require('../../models/User');
 const { checkAndAwardBadges } = require('../../utils/badgeService');
-const { sendMentorshipAcceptedEmail } = require('../../utils/emailNotifications');
+const { sendMentorshipAcceptedEmail } = require('../../utils/emailService');
 
 /**
  * Create a new mentorship session request.
@@ -78,6 +78,7 @@ const respondToSession = async (sessionId, status, alumniUser) => {
     if (status === 'Accepted') {
         await sendMentorshipAcceptedEmail(
             session.student.email,
+            session.student.name,
             session.alumni.name,
             session.topic
         );
@@ -119,6 +120,10 @@ const completeSession = async (sessionId, sessionNotes, alumniUser) => {
 const submitFeedback = async (sessionId, rating, comment, studentUser) => {
     const session = await Mentorship.findById(sessionId);
     if (!session) throw Object.assign(new Error('Session not found'), { statusCode: 404 });
+
+    if (session.status !== 'Completed') {
+        throw Object.assign(new Error('Can only submit feedback for completed sessions'), { statusCode: 400 });
+    }
 
     if (session.student.toString() !== studentUser._id.toString()) {
         throw Object.assign(new Error('Not authorized'), { statusCode: 403 });

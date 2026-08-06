@@ -238,34 +238,50 @@ const _sendJobApplicationEmail = async (alumniEmail, alumniName, studentName, jo
 
 const sendOtpEmail = async (toEmail, otp, name = 'there') => {
     if (emailQueue) {
-        await emailQueue.add('sendOtpEmail', { type: 'OTP', payload: { toEmail, otp, name } });
-    } else {
-        await _sendOtpEmail(toEmail, otp, name);
+        try {
+            await emailQueue.add('sendOtpEmail', { type: 'OTP', payload: { toEmail, otp, name } });
+            return;
+        } catch (err) {
+            console.error('[Email Queue] Failed to queue OTP email. Falling back to direct send.', err.message);
+        }
     }
+    await _sendOtpEmail(toEmail, otp, name);
 };
 
 const sendPasswordResetEmail = async (toEmail, resetLink, name = 'there') => {
     if (emailQueue) {
-        await emailQueue.add('sendPasswordResetEmail', { type: 'RESET_PASSWORD', payload: { toEmail, resetLink, name } });
-    } else {
-        await _sendPasswordResetEmail(toEmail, resetLink, name);
+        try {
+            await emailQueue.add('sendPasswordResetEmail', { type: 'RESET_PASSWORD', payload: { toEmail, resetLink, name } });
+            return;
+        } catch (err) {
+            console.error('[Email Queue] Failed to queue reset email. Falling back to direct send.', err.message);
+        }
     }
+    await _sendPasswordResetEmail(toEmail, resetLink, name);
 };
 
 const sendMentorshipAcceptedEmail = async (studentEmail, studentName, alumniName, topic) => {
     if (emailQueue) {
-        await emailQueue.add('sendMentorshipAcceptedEmail', { type: 'MENTORSHIP_ACCEPTED', payload: { studentEmail, studentName, alumniName, topic } });
-    } else {
-        await _sendMentorshipAcceptedEmail(studentEmail, studentName, alumniName, topic);
+        try {
+            await emailQueue.add('sendMentorshipAcceptedEmail', { type: 'MENTORSHIP_ACCEPTED', payload: { studentEmail, studentName, alumniName, topic } });
+            return;
+        } catch (err) {
+            console.error('[Email Queue] Failed to queue mentorship email. Falling back to direct send.', err.message);
+        }
     }
+    await _sendMentorshipAcceptedEmail(studentEmail, studentName, alumniName, topic);
 };
 
 const sendJobApplicationEmail = async (alumniEmail, alumniName, studentName, jobTitle) => {
     if (emailQueue) {
-        await emailQueue.add('sendJobApplicationEmail', { type: 'JOB_APPLICATION', payload: { alumniEmail, alumniName, studentName, jobTitle } });
-    } else {
-        await _sendJobApplicationEmail(alumniEmail, alumniName, studentName, jobTitle);
+        try {
+            await emailQueue.add('sendJobApplicationEmail', { type: 'JOB_APPLICATION', payload: { alumniEmail, alumniName, studentName, jobTitle } });
+            return;
+        } catch (err) {
+            console.error('[Email Queue] Failed to queue job application email. Falling back to direct send.', err.message);
+        }
     }
+    await _sendJobApplicationEmail(alumniEmail, alumniName, studentName, jobTitle);
 };
 
 module.exports = {

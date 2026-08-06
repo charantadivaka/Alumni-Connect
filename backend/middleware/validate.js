@@ -65,8 +65,9 @@ const validateCreateJob = validateZod(z.object({
         title: z.string().min(3, 'Job title must be 3–200 characters').max(200, 'Job title must be 3–200 characters'),
         company: z.string().min(1, 'Company name is required').max(200, 'Company name is required'),
         description: z.string().min(10, 'Description must be at least 10 characters'),
-        jobType: z.enum(['Full-time', 'Part-time', 'Internship', 'Contract', 'Remote'], {
-            errorMap: () => ({ message: 'Invalid job type' })
+        // 'Remote' is NOT a valid jobType — use the location field for remote work
+        jobType: z.enum(['Full-time', 'Part-time', 'Internship', 'Contract'], {
+            errorMap: () => ({ message: 'Invalid job type. Must be Full-time, Part-time, Internship, or Contract' })
         }).optional()
     })
 }));
@@ -100,6 +101,23 @@ const validateCreateStory = validateZod(z.object({
     })
 }));
 
+// MED-02: Previously verify-otp and resend-otp had NO validation middleware.
+// These schemas ensure malformed requests are rejected before hitting the service.
+const validateVerifyOtp = validateZod(z.object({
+    body: z.object({
+        email: z.string().email('Valid email is required'),
+        otp: z.string()
+            .length(6, 'OTP must be exactly 6 digits')
+            .regex(/^\d+$/, 'OTP must be numeric'),
+    })
+}));
+
+const validateResendOtp = validateZod(z.object({
+    body: z.object({
+        email: z.string().email('Valid email is required'),
+    })
+}));
+
 module.exports = {
     validateZod,
     validateLogin,
@@ -112,4 +130,6 @@ module.exports = {
     validateCreateThread,
     validateCreateEvent,
     validateCreateStory,
+    validateVerifyOtp,
+    validateResendOtp,
 };

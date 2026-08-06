@@ -10,7 +10,7 @@ const requestSession = async (req, res, next) => {
         const { sendNotification } = require('../../shared/services/notificationService');
         await sendNotification(alumniId, 'mentorship_request',
             `${req.user.name} requested a mentorship session`,
-            '/alumni/mentorships'
+            '/alumni/jobs-hub'
         );
         
         sendSuccess(res, session, 'Mentorship session requested', 201);
@@ -36,7 +36,7 @@ const respondToSession = async (req, res, next) => {
         const { sendNotification } = require('../../shared/services/notificationService');
         await sendNotification(session.student._id, 'mentorship_response',
             `Your mentorship request was ${status.toLowerCase()} by ${req.user.name}`,
-            '/student/mentorships'
+            '/student/jobs-hub'
         );
         
         sendSuccess(res, session, `Mentorship request ${status.toLowerCase()}`);
@@ -53,7 +53,7 @@ const completeSession = async (req, res, next) => {
         const { sendNotification } = require('../../shared/services/notificationService');
         await sendNotification(session.student, 'mentorship_completed',
             `Your mentorship session with ${req.user.name} is complete. Please leave feedback!`,
-            `/student/mentorships/${session._id}/feedback`
+            '/student/jobs-hub'
         );
         
         sendSuccess(res, session, 'Session marked as completed');

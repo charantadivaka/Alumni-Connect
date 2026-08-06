@@ -37,7 +37,7 @@ const markAsRead = async (notificationId, userId) => {
     
     if (!notification) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
     
-    await invalidatePattern('__express__/api/notifications*').catch(() => {});
+    await invalidatePattern('__express__:*:/api/notifications*').catch(() => {});
     return notification;
 };
 
@@ -48,7 +48,7 @@ const markAllAsRead = async (userId) => {
         { isRead: true }
     );
     
-    await invalidatePattern('__express__/api/notifications*').catch(() => {});
+    await invalidatePattern('__express__:*:/api/notifications*').catch(() => {});
 };
 
 module.exports = { getMyNotifications, markAsRead, markAllAsRead };

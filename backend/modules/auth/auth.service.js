@@ -15,6 +15,7 @@
  */
 
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const User = require('../../models/User');
 const College = require('../../models/College');
 const PasswordReset = require('../../models/PasswordReset');
@@ -266,6 +267,7 @@ const loginUser = async (email, password) => {
  */
 const changePassword = async (userId, currentPassword, newPassword) => {
     const user = await User.findById(userId).select('+password');
+    if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
 
     if (!(await user.comparePassword(currentPassword))) {
         throw Object.assign(new Error('Current password incorrect'), { statusCode: 400 });
@@ -326,7 +328,11 @@ const resetPassword = async (token, newPassword) => {
  * Admin login — validates hardcoded credentials, auto-creates admin user if missing.
  */
 const loginAdmin = async (username, password) => {
-    if (username !== adminConfig.username || password !== adminConfig.password) {
+    if (!adminConfig.passwordHash) {
+        throw Object.assign(new Error('Admin login disabled: ADMIN_PASSWORD_HASH not configured'), { statusCode: 500 });
+    }
+    const isMatch = await bcrypt.compare(password, adminConfig.passwordHash);
+    if (username !== adminConfig.username || !isMatch) {
         throw Object.assign(new Error('Invalid Admin credentials'), { statusCode: 401 });
     }
 
@@ -335,7 +341,7 @@ const loginAdmin = async (username, password) => {
         admin = await User.create({
             name:              'System Admin',
             email:             adminConfig.email,
-            password:          adminConfig.password,
+            password:          password, // Mongoose pre-save hook will hash this for DB storage
             role:              'admin',
             collegeRollNumber: 'ADMIN001',
         });

@@ -76,6 +76,10 @@ const submitFeedback = async (interviewId, data, alumniUser) => {
     const interview = await MockInterview.findById(interviewId);
     if (!interview) throw Object.assign(new Error('Interview not found'), { statusCode: 404 });
 
+    if (interview.status !== 'Accepted') {
+        throw Object.assign(new Error('Can only submit feedback for accepted interviews'), { statusCode: 400 });
+    }
+
     if (interview.alumni.toString() !== alumniUser._id.toString()) {
         throw Object.assign(new Error('Not authorized'), { statusCode: 403 });
     }

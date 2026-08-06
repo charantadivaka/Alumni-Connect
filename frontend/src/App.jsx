@@ -51,10 +51,17 @@ const AdminLogin           = lazy(() => import('./pages/Admin/AdminLogin'));
 const NotFound       = lazy(() => import('./pages/Shared/NotFound'));
 const Unauthorized   = lazy(() => import('./pages/Shared/Unauthorized'));
 
+// Synchronously apply theme to avoid flicker on load
+if (typeof window !== 'undefined' && localStorage.getItem('theme') === 'light') {
+  document.body.classList.add('light-theme');
+}
+
 const ThemeToggle = () => {
   const [isLight, setIsLight] = useState(document.body.classList.contains('light-theme'));
 
   useEffect(() => {
+    // State is already synchronized from the top-level block, but we keep this
+    // in case localStorage was modified externally (e.g., in another tab).
     if (localStorage.getItem('theme') === 'light') {
       document.body.classList.add('light-theme');
       setIsLight(true);

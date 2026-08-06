@@ -71,7 +71,14 @@ try {
 
 // ── Cache invalidation: delete all keys matching a glob pattern ───────────────
 // Call this after any write operation that affects a cached endpoint.
-// e.g. invalidatePattern('__express__/api/jobs*') after job create/update/delete
+// e.g. invalidatePattern('__express__:*:/api/jobs*') after job create/update/delete
+//
+// NOTE: Because the cache key is now user-scoped ('__express__:userId:url'),
+// invalidation patterns must include a wildcard for the userId segment.
+// Examples:
+//   '__express__:*:/api/jobs*'          — invalidate jobs for ALL users
+//   '__express__:*:/api/notifications*' — invalidate notifications for ALL users
+//   '__express__:*:/api/match*'         — invalidate match for ALL users
 const invalidatePattern = async (pattern) => {
     if (redisClient.isDummy) return;
     try {
@@ -102,7 +109,11 @@ const cacheMiddleware = (durationInSeconds) => {
         if (req.method !== 'GET') return next();
         if (redisClient.isDummy) return next(); // bypass when no Redis
 
-        const key = `__express__${req.originalUrl || req.url}`;
+        // Scope cache key by user ID so that private data (e.g. notifications)
+        // is never served across different users. Public endpoints (no req.user)
+        // get the literal string 'public' as the user segment.
+        const userId = req.user?._id?.toString() ?? 'public';
+        const key = `__express__:${userId}:${req.originalUrl || req.url}`;
         try {
             const cached = await redisClient.get(key);
             if (cached) {

@@ -9,8 +9,9 @@
 
 const Job = require('../../models/Job');
 const { invalidatePattern } = require('../../config/redis');
+const { escapeRegex }       = require('../../shared/utils/escapeRegex');
 
-const JOB_CACHE_PATTERN = '__express__/api/jobs*';
+const JOB_CACHE_PATTERN = '__express__:*:/api/jobs*';
 
 /**
  * Build a Mongoose filter object from query parameters.
@@ -18,13 +19,16 @@ const JOB_CACHE_PATTERN = '__express__/api/jobs*';
 const buildJobFilter = ({ search, type, location, skill }) => {
     const filter = { isActive: true };
 
-    if (search) filter.$or = [
-        { title:   { $regex: search, $options: 'i' } },
-        { company: { $regex: search, $options: 'i' } },
-    ];
+    if (search) {
+        const safe = escapeRegex(search);
+        filter.$or = [
+            { title:   { $regex: safe, $options: 'i' } },
+            { company: { $regex: safe, $options: 'i' } },
+        ];
+    }
     if (type)     filter.jobType  = type;
-    if (location) filter.location = { $regex: location, $options: 'i' };
-    if (skill)    filter.skills   = { $in: [new RegExp(skill, 'i')] };
+    if (location) filter.location = { $regex: escapeRegex(location), $options: 'i' };
+    if (skill)    filter.skills   = { $in: [new RegExp(escapeRegex(skill), 'i')] };
 
     return filter;
 };
@@ -47,7 +51,7 @@ const getAllJobs = async (query) => {
             .limit(limit),
     ]);
 
-    return { jobs, total, page, totalPages: Math.ceil(total / limit) };
+    return { jobs, total, page, totalPages: Math.max(1, Math.ceil(total / limit)) };
 };
 
 /** Fetch a single job by ID. */
@@ -83,12 +87,13 @@ const createJob = async (data, user) => {
     return job;
 };
 
-/** Update an existing job — only the owner can update. */
+/** Update an existing job — only the owner or admin can update. */
 const updateJob = async (jobId, data, user) => {
     const job = await Job.findById(jobId);
     if (!job) throw Object.assign(new Error('Job not found'), { statusCode: 404 });
 
-    if (job.postedBy.toString() !== user._id.toString()) {
+    // Allow admin to edit any job (e.g. for moderation); otherwise only owner can update
+    if (job.postedBy.toString() !== user._id.toString() && user.role !== 'admin') {
         throw Object.assign(new Error('Not authorized'), { statusCode: 403 });
     }
 

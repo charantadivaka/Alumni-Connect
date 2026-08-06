@@ -62,10 +62,12 @@ const config = {
     },
 
     // ── Admin Credentials ────────────────────────────────────────────────────────
+    // CRIT-01: Password is stored as a bcrypt hash, never plaintext.
+    // To generate: node -e "require('bcryptjs').hash('YourPassword',12).then(console.log)"
     admin: {
-        username: process.env.ADMIN_USERNAME || 'Admin',
-        password: process.env.ADMIN_PASSWORD || 'Admin@123',
-        email:    process.env.ADMIN_EMAIL    || 'admin@college.edu',
+        username:     process.env.ADMIN_USERNAME      || 'Admin',
+        passwordHash: process.env.ADMIN_PASSWORD_HASH || null,
+        email:        process.env.ADMIN_EMAIL         || 'admin@college.edu',
     },
 
     // ── Razorpay ─────────────────────────────────────────────────────────────────
@@ -77,18 +79,48 @@ const config = {
 };
 
 // ── Startup validation ────────────────────────────────────────────────────────
-// Warn about critical missing configs without crashing in development.
+// CRIT-05: Crash hard in production when critical secrets are missing or insecure.
+// In development these produce prominent warnings instead of crashes so the server
+// can still start with partial configuration during local testing.
+const INSECURE_JWT_PLACEHOLDER = 'change_this_to_a_long_random_string_min_32_chars';
+const errors   = [];
 const warnings = [];
 
+// JWT_SECRET checks
 if (!config.jwt.secret) {
-    warnings.push('JWT_SECRET is not set — authentication will fail.');
-}
-if (!config.database.uri) {
-    warnings.push('MONGO_URI is not set — database connection will fail.');
+    errors.push('JWT_SECRET is not set — authentication will fail.');
+} else if (config.jwt.secret === INSECURE_JWT_PLACEHOLDER) {
+    errors.push(
+        'JWT_SECRET is still the default placeholder value. ' +
+        'Set a strong random string (min 32 chars) in your .env file.'
+    );
+} else if (config.jwt.secret.length < 32) {
+    errors.push(`JWT_SECRET is too short (${config.jwt.secret.length} chars). Minimum is 32 characters.`);
 }
 
-if (warnings.length > 0) {
-    warnings.forEach(w => console.warn(`⚠️  [Config] ${w}`));
+// Admin credential checks
+if (!config.admin.passwordHash) {
+    errors.push(
+        'ADMIN_PASSWORD_HASH is not set. ' +
+        'Generate one with: node -e "require(\'bcryptjs\').hash(\'YourPassword\',12).then(console.log)"'
+    );
+}
+
+if (errors.length > 0) {
+    if (config.server.isProduction) {
+        // In production, crash immediately — running with insecure config is unacceptable
+        errors.forEach(e => console.error(`❌ [Config] FATAL: ${e}`));
+        process.exit(1);
+    } else {
+        // In development, warn loudly but allow startup so devs can still work
+        console.warn('\n⚠️  [Config] Security warnings (would be FATAL in production):');
+        errors.forEach(e => console.warn(`   • ${e}`));
+        console.warn('⚠️  DO NOT deploy with these warnings active.\n');
+    }
+}
+
+if (!config.database.uri) {
+    console.warn('⚠️  [Config] MONGO_URI is not set — database connection will fail.');
 }
 
 module.exports = config;

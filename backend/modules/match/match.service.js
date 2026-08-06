@@ -8,6 +8,7 @@
 
 const User = require('../../models/User');
 const { getMatchedAlumni } = require('../../utils/matchingAlgorithm');
+const { escapeRegex }       = require('../../shared/utils/escapeRegex');
 
 /**
  * Get smart-matched alumni for logged-in student.
@@ -17,8 +18,8 @@ const getMatches = async (studentUser, query) => {
     const student = await User.findById(studentUser._id).populate('college', 'name');
     const { industry, availability, skill, search } = query;
 
-    if (!student.college) {
-        return { alumni: [], noCollege: true, collegeName: '', total: 0, totalPages: 0 };
+    if (!student || !student.college) {
+        return { alumni: [], noCollege: true, collegeName: '', total: 0, totalPages: 1 };
     }
 
     let filter = {
@@ -29,14 +30,15 @@ const getMatches = async (studentUser, query) => {
         college: student.college._id,
     };
 
-    if (industry)      filter.industry = { $regex: industry, $options: 'i' };
+    if (industry)      filter.industry = { $regex: escapeRegex(industry), $options: 'i' };
     if (availability === 'true') filter.mentorshipAvailability = 'Available';
-    if (skill)         filter.skills = { $in: [new RegExp(skill, 'i')] };
+    if (skill)         filter.skills = { $in: [new RegExp(escapeRegex(skill), 'i')] };
     if (search) {
+        const safe = escapeRegex(search);
         filter.$or = [
-            { name: { $regex: search, $options: 'i' } },
-            { company: { $regex: search, $options: 'i' } },
-            { designation: { $regex: search, $options: 'i' } },
+            { name: { $regex: safe, $options: 'i' } },
+            { company: { $regex: safe, $options: 'i' } },
+            { designation: { $regex: safe, $options: 'i' } },
         ];
     }
 
@@ -57,7 +59,7 @@ const getMatches = async (studentUser, query) => {
         noCollege: false,
         collegeName: student.college.name,
         total: matched.length,
-        totalPages: Math.ceil(matched.length / limit),
+        totalPages: Math.max(1, Math.ceil(matched.length / limit)),
     };
 };
 
@@ -89,7 +91,7 @@ const getDirectory = async (requesterUser, query) => {
             .limit(limit)
     ]);
 
-    return { alumni, total, totalPages: Math.ceil(total / limit) };
+    return { alumni, total, totalPages: Math.max(1, Math.ceil(total / limit)) };
 };
 
 /** Get single alumni profile. */

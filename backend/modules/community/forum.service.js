@@ -12,6 +12,17 @@ const { checkAndAwardBadges } = require('../../utils/badgeService');
 // In-memory spam prevention map
 const userSpamMap = new Map();
 
+// Cleanup stale spam records every 15 minutes to prevent memory leaks
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, val] of userSpamMap.entries()) {
+        const maxTs = Math.max(0, ...(val.timestamps || []));
+        if (now - maxTs > 60 * 60 * 1000) { // Purge after 1 hour of inactivity
+            userSpamMap.delete(key);
+        }
+    }
+}, 15 * 60 * 1000);
+
 /** Build filter scoped to user's college (admins see all). */
 const buildThreadFilter = (user, category) => {
     const filter = {};

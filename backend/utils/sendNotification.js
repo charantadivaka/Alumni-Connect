@@ -21,7 +21,7 @@ const sendNotification = async (io, userId, type, message, link = '') => {
         io.to(userId.toString()).emit('new_notification', notification);
 
         // Invalidate Redis cache for this user's notifications
-        await invalidatePattern(`__express__/api/notifications*`).catch(() => {});
+        await invalidatePattern(`__express__:*:/api/notifications*`).catch(() => {});
     } catch (err) {
         console.error('Notification error:', err.message);
     }

@@ -21,7 +21,12 @@ const sendRequest = async (senderId, receiverId) => {
         throw Object.assign(new Error('Cannot connect with yourself.'), { statusCode: 400 });
     }
 
-    const existing = await Connection.findOne({ sender: senderId, receiver: receiverId });
+    const existing = await Connection.findOne({
+        $or: [
+            { sender: senderId, receiver: receiverId },
+            { sender: receiverId, receiver: senderId }
+        ]
+    });
     if (existing) {
         throw Object.assign(
             new Error(`Connection already ${existing.status.toLowerCase()}.`),
@@ -37,8 +42,8 @@ const getMyConnections = async (userId) => {
     return Connection.find({
         $or: [{ sender: userId }, { receiver: userId }],
     })
-        .populate('sender',   'name role company designation profilePicture bio skills department year rollNo graduationYear')
-        .populate('receiver', 'name role company designation profilePicture bio skills department year rollNo graduationYear');
+        .populate('sender',   'name role company designation profilePicture bio skills department currentYear collegeRollNumber graduationYear')
+        .populate('receiver', 'name role company designation profilePicture bio skills department currentYear collegeRollNumber graduationYear');
 };
 
 /**
@@ -95,7 +100,7 @@ const getStudentsDirectory = async (requestingUser) => {
             role:    'student',
             college: me.college,
             _id:     { $ne: requestingUser._id },
-        }).select('name email department year rollNo bio skills profilePicture college'),
+        }).select('name email department currentYear collegeRollNumber bio skills profilePicture college'),
         College.findById(me.college).select('name'),
     ]);
 

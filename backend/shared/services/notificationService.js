@@ -36,7 +36,7 @@ const sendNotification = async (userId, type, message, link = '') => {
         eventBus.emit('send_notification', { userId, notification });
 
         // Invalidate the cached notifications list for this user
-        await invalidatePattern('__express__/api/notifications*').catch(() => {});
+        await invalidatePattern('__express__:*:/api/notifications*').catch(() => {});
 
         return notification;
     } catch (err) {
