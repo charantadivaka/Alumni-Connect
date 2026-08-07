@@ -69,11 +69,46 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const user = await authService.loginUser(email, password);
+        const result = await authService.loginUser(email, password);
+        
+        if (result.requires2FA) {
+            return sendSuccess(res, { requires2FA: true, email: result.email }, '2FA OTP sent to email', 200);
+        }
+
+        const { user } = result;
         const token = generateToken(user._id);
         
         setTokenCookie(res, token);
         sendSuccess(res, { user, token }, 'Login successful');
+    } catch (err) {
+        next(err);
+    }
+};
+
+/** Verify 2FA Login */
+const verify2FALogin = async (req, res, next) => {
+    try {
+        const { email, otp } = req.body;
+        if (!email || !otp) {
+            return res.status(400).json({ message: 'Email and OTP are required' });
+        }
+
+        const user = await authService.verify2FALogin(email, otp);
+        const token = generateToken(user._id);
+        
+        setTokenCookie(res, token);
+        sendSuccess(res, { user, token }, 'Login successful');
+    } catch (err) {
+        next(err);
+    }
+};
+
+/** Toggle 2FA Setting */
+const toggle2FA = async (req, res, next) => {
+    try {
+        const { isEnabled } = req.body;
+        const status = await authService.toggle2FA(req.user._id, isEnabled);
+        sendSuccess(res, { isTwoFactorEnabled: status }, `Two-Factor Authentication has been ${status ? 'enabled' : 'disabled'}.`);
     } catch (err) {
         next(err);
     }
@@ -141,7 +176,12 @@ const getMe = (req, res) => {
 };
 
 module.exports = {
-    sendOtp, verifyOtp, resendOtp, register,
-    login, changePassword, forgotPassword, resetPassword,
+    sendOtp,    verifyOtp,
+    resendOtp,
+    register,
+    login,
+    verify2FALogin,
+    toggle2FA,
+    changePassword, forgotPassword, resetPassword,
     adminLogin, logout, getMe
 };

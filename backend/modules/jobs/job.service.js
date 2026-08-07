@@ -10,6 +10,7 @@
 const Job = require('../../models/Job');
 const { invalidatePattern } = require('../../config/redis');
 const { escapeRegex }       = require('../../shared/utils/escapeRegex');
+const { esClient }          = require('../../config/elasticsearch');
 
 const JOB_CACHE_PATTERN = '__express__:*:/api/jobs*';
 
@@ -35,18 +36,57 @@ const buildJobFilter = ({ search, type, location, skill }) => {
 
 /**
  * Fetch paginated list of active jobs.
+ * Uses Elasticsearch if available and searching by text, otherwise falls back to MongoDB.
  */
 const getAllJobs = async (query) => {
-    const filter = buildJobFilter(query);
     const page   = parseInt(query.page,  10) || 1;
     const limit  = parseInt(query.limit, 10) || 50;
     const skip   = (page - 1) * limit;
+
+    let jobIds = null;
+
+    // Use Elasticsearch if we have a search term and the client is ready
+    if (query.search && esClient) {
+        try {
+            const { hits } = await esClient.search({
+                index: 'jobs',
+                body: {
+                    query: {
+                        bool: {
+                            must: [
+                                { match: { isActive: true } },
+                                {
+                                    multi_match: {
+                                        query: query.search,
+                                        fields: ['title^3', 'company^2', 'description'],
+                                        fuzziness: 'AUTO'
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    _source: false, // We only need the IDs
+                    size: 1000 // Limit max results from ES to prevent massive IN queries
+                }
+            });
+            jobIds = hits.hits.map(h => h._id);
+        } catch (err) {
+            console.error('[Elasticsearch] Job search failed, falling back to MongoDB:', err.message);
+        }
+    }
+
+    const filter = buildJobFilter(query);
+    // If ES returned IDs, override the search filter to just fetch those IDs
+    if (jobIds !== null) {
+        delete filter.$or;
+        filter._id = { $in: jobIds };
+    }
 
     const [total, jobs] = await Promise.all([
         Job.countDocuments(filter),
         Job.find(filter)
             .populate('postedBy', 'name company designation profilePicture')
-            .sort({ createdAt: -1 })
+            .sort(jobIds ? { _id: 1 } : { createdAt: -1 }) // Sort by ES score implicitly if using ES
             .skip(skip)
             .limit(limit),
     ]);

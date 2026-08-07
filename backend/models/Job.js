@@ -36,4 +36,29 @@ const jobSchema = new mongoose.Schema({
 jobSchema.index({ isActive: 1, createdAt: -1 });
 jobSchema.index({ reports: 1 });           // Finds jobs with any reports (replaces ineffective 'reports.0' index)
 
+// ── Elasticsearch Sync Hooks ─────────────────────────────────────────
+jobSchema.post('save', async function (doc) {
+    const { syncToElasticsearch } = require('../shared/services/searchSync');
+    
+    await syncToElasticsearch('jobs', doc._id, {
+        title: doc.title,
+        company: doc.company,
+        description: doc.description,
+        location: doc.location,
+        jobType: doc.jobType,
+        skills: doc.skills,
+        isActive: doc.isActive,
+    });
+});
+
+jobSchema.post('findOneAndDelete', async function (doc) {
+    if (!doc) return;
+    const { removeFromElasticsearch } = require('../shared/services/searchSync');
+    await removeFromElasticsearch('jobs', doc._id);
+});
+jobSchema.post('deleteOne', { document: true, query: false }, async function (doc) {
+    const { removeFromElasticsearch } = require('../shared/services/searchSync');
+    await removeFromElasticsearch('jobs', doc._id);
+});
+
 module.exports = mongoose.model('Job', jobSchema);

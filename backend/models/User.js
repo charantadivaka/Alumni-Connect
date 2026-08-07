@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6, select: false },
     role: { type: String, enum: ['student', 'alumni', 'admin'], required: true },
+    isTwoFactorEnabled: { type: Boolean, default: false },
     college: { type: require('mongoose').Schema.Types.ObjectId, ref: 'College', default: null },
     collegeRollNumber: { type: String, required: function() { return this.role !== 'admin'; }, unique: true, sparse: true, trim: true },
     profilePicture: { type: String, default: '' },
@@ -77,5 +78,31 @@ userSchema.methods.comparePassword = async function (candidate) {
 // Indexes for performance
 userSchema.index({ role: 1, college: 1 });
 userSchema.index({ industry: 1 });
+
+// ── Elasticsearch Sync Hooks ─────────────────────────────────────────
+userSchema.post('save', async function (doc) {
+    const { syncToElasticsearch } = require('../shared/services/searchSync');
+    // Only index alumni/students, ignore admins for search
+    if (doc.role === 'admin') return;
+    
+    await syncToElasticsearch('users', doc._id, {
+        name: doc.name,
+        company: doc.company,
+        designation: doc.designation,
+        industry: doc.industry,
+        skills: doc.skills,
+        role: doc.role,
+    });
+});
+
+userSchema.post('findOneAndDelete', async function (doc) {
+    if (!doc) return;
+    const { removeFromElasticsearch } = require('../shared/services/searchSync');
+    await removeFromElasticsearch('users', doc._id);
+});
+userSchema.post('deleteOne', { document: true, query: false }, async function (doc) {
+    const { removeFromElasticsearch } = require('../shared/services/searchSync');
+    await removeFromElasticsearch('users', doc._id);
+});
 
 module.exports = mongoose.model('User', userSchema);

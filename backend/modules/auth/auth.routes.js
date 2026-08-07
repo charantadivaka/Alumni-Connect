@@ -12,6 +12,7 @@ router.post('/send-otp', validate.validateSendOtp, authController.sendOtp);
 router.post('/verify-otp', validate.validateVerifyOtp, authController.verifyOtp);
 router.post('/resend-otp', validate.validateResendOtp, authController.resendOtp);
 router.post('/login', validate.validateLogin, authController.login);
+router.post('/verify-2fa-login', authController.verify2FALogin);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 router.post('/admin/login', authController.adminLogin);
@@ -20,5 +21,6 @@ router.get('/me', protect, authController.getMe);          // session check
 
 // Protected routes
 router.put('/change-password', protect, validate.validateChangePassword, authController.changePassword);
+router.post('/toggle-2fa', protect, authController.toggle2FA);
 
 module.exports = router;

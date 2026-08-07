@@ -33,6 +33,10 @@ try {
 // ── Connect DB ───────────────────────────────────────────────────────────────
 connectDB();
 
+// ── Connect Elasticsearch ──────────────────────────────────────────────────
+const { initElasticsearch } = require('./config/elasticsearch');
+initElasticsearch();
+
 const app = express();
 const server = http.createServer(app);
 

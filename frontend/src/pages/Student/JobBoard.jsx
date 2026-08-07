@@ -4,6 +4,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { jobService, applicationService } from '../../services/jobService';
 import { bookmarkService } from '../../services/otherServices';
 import { useAuth } from '../../context/AuthContext';
+import Pagination from '../../components/ui/Pagination';
 import '../../styles/Student/JobBoard.css';
 
 const JobBoard = () => {
@@ -13,9 +14,15 @@ const JobBoard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const JOBS_PER_PAGE = 10;
+
   // Search & Sort state
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState('latest');
+  const debouncedSearch = useDebounce(search, 300);
   
   // Modal states
   const [selectedJob, setSelectedJob] = useState(null);
@@ -38,11 +45,13 @@ const JobBoard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         const [jobsData, bks] = await Promise.all([
-          jobService.getAll(),
+          jobService.getAll({ search: debouncedSearch, page: currentPage, limit: JOBS_PER_PAGE }),
           bookmarkService.getAll('Job')
         ]);
         setJobs(jobsData.jobs || jobsData || []);
+        setTotalPages(jobsData.totalPages || 1);
         setBookmarks(new Set(bks.map(b => b.refId)));
       } catch (err) {
         setError(err.message);
@@ -51,7 +60,12 @@ const JobBoard = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [currentPage, debouncedSearch]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
 
   const handleToggleBookmark = async (e, jobId) => {
     e.stopPropagation();
@@ -143,19 +157,12 @@ const JobBoard = () => {
     }
   };
 
-  const debouncedSearch = useDebounce(search, 300);
-
-  const filteredJobs = jobs
-    .filter(job => {
-      if (!debouncedSearch) return true;
-      const q = debouncedSearch.toLowerCase();
-      return job.title?.toLowerCase().includes(q) || job.company?.toLowerCase().includes(q);
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      return sortOrder === 'latest' ? dateB - dateA : dateA - dateB;
-    });
+  // Sort jobs client-side (search is now server-side)
+  const displayedJobs = [...jobs].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return sortOrder === 'latest' ? dateB - dateA : dateA - dateB;
+  });
 
   return (
     <div className="dashboard-layout">
@@ -188,7 +195,7 @@ const JobBoard = () => {
 
         {loading ? (
           <div style={{ padding: 'var(--sp-xl)', textAlign: 'center' }}><span className="spinner" /> Loading...</div>
-        ) : filteredJobs.length === 0 ? (
+        ) : displayedJobs.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: 'var(--sp-xl)' }}>
             <span style={{ fontSize: '2rem' }}>💼</span>
             <h3>No Jobs Found</h3>
@@ -196,7 +203,7 @@ const JobBoard = () => {
           </div>
         ) : (
           <div className="grid-2">
-            {filteredJobs.map(job => (
+            {displayedJobs.map(job => (
               <div 
                 key={job._id} 
                 className="card" 
@@ -238,6 +245,13 @@ const JobBoard = () => {
             ))}
           </div>
         )}
+
+        {/* Pagination Controls */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        />
 
         {/* Modal Overlay */}
         {selectedJob && (

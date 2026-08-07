@@ -8,13 +8,20 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce: only update debouncedSearch 350ms after the user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const queryParams = [];
       if (filter) queryParams.push(`role=${filter}`);
-      if (search) queryParams.push(`search=${search}`);
+      if (debouncedSearch) queryParams.push(`search=${encodeURIComponent(debouncedSearch)}`);
       const qs = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
       const data = await adminService.getUsers(qs);
       setUsers(data);
@@ -27,7 +34,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [filter, search]);
+  }, [filter, debouncedSearch]);
 
   const handleSuspend = async (id) => {
     try {

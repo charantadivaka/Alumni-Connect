@@ -9,6 +9,7 @@
 const User = require('../../models/User');
 const { getMatchedAlumni } = require('../../utils/matchingAlgorithm');
 const { escapeRegex }       = require('../../shared/utils/escapeRegex');
+const { esClient }          = require('../../config/elasticsearch');
 
 /**
  * Get smart-matched alumni for logged-in student.
@@ -33,7 +34,40 @@ const getMatches = async (studentUser, query) => {
     if (industry)      filter.industry = { $regex: escapeRegex(industry), $options: 'i' };
     if (availability === 'true') filter.mentorshipAvailability = 'Available';
     if (skill)         filter.skills = { $in: [new RegExp(escapeRegex(skill), 'i')] };
-    if (search) {
+    let userIds = null;
+
+    if (search && esClient) {
+        try {
+            const { hits } = await esClient.search({
+                index: 'users',
+                body: {
+                    query: {
+                        bool: {
+                            must: [
+                                { match: { role: 'alumni' } },
+                                {
+                                    multi_match: {
+                                        query: search,
+                                        fields: ['name^3', 'company^2', 'designation', 'skills', 'industry'],
+                                        fuzziness: 'AUTO'
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    _source: false,
+                    size: 1000
+                }
+            });
+            userIds = hits.hits.map(h => h._id);
+        } catch (err) {
+            console.error('[Elasticsearch] User search failed, falling back to MongoDB:', err.message);
+        }
+    }
+
+    if (userIds !== null) {
+        filter._id = { $in: userIds, $ne: student._id };
+    } else if (search) {
         const safe = escapeRegex(search);
         filter.$or = [
             { name: { $regex: safe, $options: 'i' } },

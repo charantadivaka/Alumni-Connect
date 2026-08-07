@@ -2,6 +2,10 @@
 
 const { server } = require('../shared/config');
 
+// Logger is optional — falls back gracefully if Winston is not installed
+let logger;
+try { logger = require('../config/logger'); } catch (_) { logger = console; }
+
 /**
  * Centralized Error Handler
  * ─────────────────────────
@@ -58,7 +62,11 @@ const errorHandler = (err, req, res, next) => {
 
     // ── Log server-side errors ────────────────────────────────────────────────────
     if (statusCode >= 500) {
-        console.error(`[ERROR] [${req.requestId || 'no-id'}] ${err.stack || err.message}`);
+        logger.error(`[${req.requestId || 'no-id'}] ${err.stack || err.message}`, {
+            method: req.method,
+            url:    req.originalUrl,
+            status: statusCode,
+        });
     }
 
     return res.status(statusCode).json({

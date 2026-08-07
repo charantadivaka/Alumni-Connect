@@ -8,10 +8,11 @@ import '../../styles/Home/Login.css';
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm]     = useState({ email: '', password: '' });
+  const [form, setForm]     = useState({ email: '', password: '', otp: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // 1 = Login, 2 = 2FA OTP
 
   const handleChange = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -19,9 +20,19 @@ const Login = () => {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      const { user } = await authService.login(form);
-      login(user);
-      navigate(`/${user.role}/dashboard`);
+      if (step === 1) {
+        const response = await authService.login({ email: form.email, password: form.password });
+        if (response.requires2FA) {
+            setStep(2);
+            return;
+        }
+        login(response.user);
+        navigate(`/${response.user.role}/dashboard`);
+      } else {
+        const response = await authService.verify2FALogin({ email: form.email, otp: form.otp });
+        login(response.user);
+        navigate(`/${response.user.role}/dashboard`);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -45,32 +56,45 @@ const Login = () => {
           )}
 
           <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="email" className="form-label">Email</label>
-              <input id="email" className="form-input" type="email" name="email" placeholder="you@university.edu"
-                value={form.email} onChange={handleChange} required aria-required="true" />
-            </div>
-            <div className="form-group">
-              <label htmlFor="password" className="form-label">Password</label>
-              <div className="password-field">
-                <input id="password" className="form-input" type={showPassword ? 'text' : 'password'} name="password"
-                  placeholder="••••••••" value={form.password} onChange={handleChange} required aria-required="true" />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                  )}
-                </button>
+            {step === 1 ? (
+              <>
+                <div className="form-group">
+                  <label htmlFor="email" className="form-label">Email</label>
+                  <input id="email" className="form-input" type="email" name="email" placeholder="you@university.edu"
+                    value={form.email} onChange={handleChange} required aria-required="true" />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="password" className="form-label">Password</label>
+                  <div className="password-field">
+                    <input id="password" className="form-input" type={showPassword ? 'text' : 'password'} name="password"
+                      placeholder="••••••••" value={form.password} onChange={handleChange} required aria-required="true" />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="password-toggle"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                  <div className="form-extra">
+                    <Link to="/forgot-password" className="form-link">Forgot password?</Link>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="form-group">
+                <p style={{ fontSize: '0.9rem', marginBottom: '15px', color: 'var(--clr-text-muted)' }}>
+                  A verification code has been sent to your email. Please enter it below.
+                </p>
+                <label htmlFor="otp" className="form-label">Authentication Code (OTP)</label>
+                <input id="otp" className="form-input" type="text" name="otp" placeholder="123456"
+                  value={form.otp} onChange={handleChange} required aria-required="true" maxLength={6}
+                  style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '1.2rem', fontWeight: 'bold' }} />
               </div>
-            </div>
+            )}
             <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
-              {loading ? <><span className="spinner-sm spinner" /> Signing in...</> : 'Sign In'}
+              {loading ? <><span className="spinner-sm spinner" /> Processing...</> : (step === 1 ? 'Sign In' : 'Verify & Sign In')}
             </button>
           </form>
 

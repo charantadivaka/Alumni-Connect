@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { profileService } from '../../services/profileService';
+import { authService } from '../../services/authService';
 import { collegeService } from '../../services/collegeService';
 import '../../styles/Alumni/AlumniProfile.css';
 
@@ -13,6 +14,7 @@ const AlumniProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
@@ -47,6 +49,7 @@ const AlumniProfile = () => {
         ]);
         setProfile(data);
         setColleges(cols);
+        setIs2FAEnabled(data.isTwoFactorEnabled || false);
 
         const currentCollege = data.college?._id || data.college || '';
         setForm({
@@ -177,6 +180,18 @@ const AlumniProfile = () => {
     rollValidation === true  ? '1.5px solid var(--clr-success)' :
     rollValidation === false ? '1.5px solid var(--clr-danger)'  :
     undefined;
+
+  const handleToggle2FA = async (e) => {
+    e.preventDefault();
+    try {
+      const newState = !is2FAEnabled;
+      await authService.toggle2FA(newState);
+      setIs2FAEnabled(newState);
+      setSuccess(`Two-Factor Authentication is now ${newState ? 'enabled' : 'disabled'}.`);
+    } catch (err) {
+      setError(err.message || 'Failed to toggle 2FA');
+    }
+  };
 
   return (
     <div className="dashboard-layout">
@@ -410,10 +425,23 @@ const AlumniProfile = () => {
                   Delete Account
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'Saving…' : 'Save Profile'}
+                  {saving ? 'Saving...' : 'Save Profile Changes'}
                 </button>
               </div>
             </form>
+
+            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--clr-border)' }}>
+              <h3 style={{ marginBottom: '1rem' }}>Security Settings</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--clr-bg-elevated)', borderRadius: 'var(--r-md)', border: '1px solid var(--clr-border)' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 4px 0' }}>Two-Factor Authentication (2FA)</h4>
+                  <p className="text-muted text-sm" style={{ margin: 0 }}>Add an extra layer of security to your account with Email OTPs.</p>
+                </div>
+                <button onClick={handleToggle2FA} className={`btn ${is2FAEnabled ? 'btn-danger' : 'btn-primary'}`}>
+                  {is2FAEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>

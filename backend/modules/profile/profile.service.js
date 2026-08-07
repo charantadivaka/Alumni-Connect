@@ -84,6 +84,7 @@ const updateProfile = async (userId, updates) => {
 /**
  * Upload or update the user's profile picture.
  * Uses Cloudinary if configured, otherwise stores base64 directly.
+ * Deletes the old Cloudinary image to prevent orphaned files.
  */
 const uploadPicture = async (userId, imageData) => {
     if (!imageData) throw Object.assign(new Error('No image data provided'), { statusCode: 400 });
@@ -102,6 +103,27 @@ const uploadPicture = async (userId, imageData) => {
 
     if (cloudinaryConfig.isConfigured) {
         const cloudinary = require('../../config/cloudinary');
+
+        // Delete the old Cloudinary image (if one exists) before uploading new one
+        const existingUser = await User.findById(userId).select('profilePicture');
+        if (existingUser?.profilePicture && existingUser.profilePicture.includes('cloudinary.com')) {
+            try {
+                // Extract the public_id from the Cloudinary URL
+                // URL format: https://res.cloudinary.com/<cloud>/image/upload/<version>/<folder>/<public_id>.<ext>
+                const urlParts = existingUser.profilePicture.split('/');
+                const uploadIndex = urlParts.indexOf('upload');
+                if (uploadIndex !== -1) {
+                    // Everything after 'upload/<version>/' is the public_id (without extension)
+                    const pathAfterUpload = urlParts.slice(uploadIndex + 2).join('/');
+                    const publicId = pathAfterUpload.replace(/\.[^/.]+$/, ''); // remove extension
+                    await cloudinary.uploader.destroy(publicId);
+                }
+            } catch (cleanupErr) {
+                // Non-fatal: log but don't block the upload
+                console.warn('[Cloudinary] Failed to delete old profile image:', cleanupErr.message);
+            }
+        }
+
         const result = await cloudinary.uploader.upload(imageData, {
             folder: 'alumniconnect/profiles',
             width:  300,

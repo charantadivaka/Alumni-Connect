@@ -246,7 +246,7 @@ const registerDirectly = async (data) => {
 
 /**
  * Validate login credentials and return the user document.
- * Throws if credentials are wrong or account is suspended.
+ * If user has 2FA enabled, generates OTP and returns requires2FA flag instead.
  */
 const loginUser = async (email, password) => {
     const user = await User.findOne({ email }).select('+password');
@@ -259,7 +259,49 @@ const loginUser = async (email, password) => {
         throw Object.assign(new Error('Account suspended'), { statusCode: 403 });
     }
 
+    if (user.isTwoFactorEnabled) {
+        // Generate and send OTP for 2FA
+        purgeExpiredOtps();
+        const otp = generateOtp();
+        await storeOtp(`2fa:${email}`, { otp, userId: user._id });
+        await sendOtpEmail(user.email, otp, user.name);
+        return { requires2FA: true, email: user.email };
+    }
+
+    return { user };
+};
+
+/**
+ * Verify 2FA OTP and return user document.
+ */
+const verify2FALogin = async (email, otp) => {
+    const record = await getOtp(`2fa:${email}`);
+    
+    if (!record || (record.expiresAt && Date.now() > record.expiresAt)) {
+        await deleteOtp(`2fa:${email}`);
+        throw Object.assign(new Error('OTP expired or invalid. Please login again.'), { statusCode: 400 });
+    }
+
+    if (record.otp !== String(otp).trim()) {
+        throw Object.assign(new Error('Incorrect OTP. Please try again.'), { statusCode: 400 });
+    }
+
+    await deleteOtp(`2fa:${email}`);
+    const user = await User.findById(record.userId);
+    if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+    
     return user;
+};
+
+/**
+ * Toggle 2FA setting for a user.
+ */
+const toggle2FA = async (userId, isEnabled) => {
+    const user = await User.findById(userId);
+    if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+    user.isTwoFactorEnabled = isEnabled;
+    await user.save();
+    return user.isTwoFactorEnabled;
 };
 
 /**
@@ -356,6 +398,8 @@ module.exports = {
     resendOtp,
     registerDirectly,
     loginUser,
+    verify2FALogin,
+    toggle2FA,
     changePassword,
     initiateForgotPassword,
     resetPassword,
