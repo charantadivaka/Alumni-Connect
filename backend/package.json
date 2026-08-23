@@ -14,7 +14,7 @@
     "kill-port": "powershell -Command \"Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | Sort-Object -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; Write-Host 'Port 5000 cleared'\""
   },
   "dependencies": {
-    "@elastic/elasticsearch": "^9.5.0",
+    "@elastic/elasticsearch": "^8.19.2",
     "bcryptjs": "^2.4.3",
     "bullmq": "^6.0.0",
     "cloudinary": "^1.41.0",

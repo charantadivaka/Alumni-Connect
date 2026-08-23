@@ -49,6 +49,8 @@ export const VideoCallProvider = ({ children }) => {
     // 'idle' | 'calling' | 'incoming' | 'active'
     const [myStream, setMyStream]               = useState(null);
     const [remoteStream, setRemoteStream]       = useState(null);
+    const [remoteScreenStream, setRemoteScreenStream] = useState(null);
+    const [screenStream, setScreenStream]       = useState(null);
     const [isCameraOn, setIsCameraOn]           = useState(true);
     const [isMicOn, setIsMicOn]                 = useState(true);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -60,8 +62,9 @@ export const VideoCallProvider = ({ children }) => {
     // ── Refs (stable mutable values — no re-render side effects) ─────────────
     const peerRef              = useRef(null);   // RTCPeerConnection instance
     const myStreamRef          = useRef(null);   // local MediaStream
-    const remoteStreamRef      = useRef(null);   // remote MediaStream
-    const screenStreamRef      = useRef(null);   // screen-share stream
+    const remoteStreamRef      = useRef(null);   // remote MediaStream (camera + audio)
+    const remoteStreamIdRef    = useRef(null);   // original ID of camera stream
+    const remoteScreenStreamRef= useRef(null);   // remote screen-share stream
     const mediaRecorderRef     = useRef(null);   // MediaRecorder for recording
     const recordedChunksRef    = useRef([]);     // recorded Blob chunks
     const incomingDataRef      = useRef(null);   // { offer, from } from incoming_call
@@ -69,6 +72,8 @@ export const VideoCallProvider = ({ children }) => {
     const remoteDescReadyRef   = useRef(false);  // has setRemoteDescription been called?
     const callStatusRef        = useRef('idle'); // mirrors callStatus without closure staleness
     const sessionInfoRef       = useRef(null);   // mirrors sessionInfo
+
+    const screenSenderRef      = useRef(null);   // WebRTC sender for screen track
 
     // Helpers that keep ref + state in sync
     const setCallStatus = useCallback((s) => {
@@ -89,7 +94,10 @@ export const VideoCallProvider = ({ children }) => {
         }
         // Stop all local tracks
         myStreamRef.current?.getTracks().forEach(t => t.stop());
-        screenStreamRef.current?.getTracks().forEach(t => t.stop());
+        setScreenStream(prev => {
+            prev?.getTracks().forEach(t => t.stop());
+            return null;
+        });
         // Close peer connection
         peerRef.current?.close();
 
@@ -97,16 +105,20 @@ export const VideoCallProvider = ({ children }) => {
         peerRef.current           = null;
         myStreamRef.current       = null;
         remoteStreamRef.current   = null;
-        screenStreamRef.current   = null;
+        remoteStreamIdRef.current = null;
+        remoteScreenStreamRef.current = null;
         mediaRecorderRef.current  = null;
         incomingDataRef.current   = null;
         recordedChunksRef.current = [];
         pendingCandidatesRef.current = [];
         remoteDescReadyRef.current = false;
+        screenSenderRef.current   = null;
 
         // Reset state
         setMyStream(null);
         setRemoteStream(null);
+        setRemoteScreenStream(null);
+        setScreenStream(null);
         setIsCameraOn(true);
         setIsMicOn(true);
         setIsScreenSharing(false);
@@ -151,11 +163,54 @@ export const VideoCallProvider = ({ children }) => {
             }
         };
 
-        pc.ontrack = ({ streams }) => {
-            const stream = streams?.[0];
-            if (stream) {
-                remoteStreamRef.current = stream;
-                setRemoteStream(stream);
+        pc.ontrack = ({ track, streams }) => {
+            if (streams && streams.length > 0) {
+                const stream = streams[0];
+                const streamId = stream.id;
+
+                if (!remoteStreamRef.current) {
+                    // First time receiving a stream (assume it's the main camera/audio)
+                    remoteStreamIdRef.current = streamId;
+                    const newStream = new MediaStream(stream.getTracks());
+                    remoteStreamRef.current = newStream;
+                    setRemoteStream(newStream);
+                    
+                    stream.onaddtrack = () => {
+                        const updated = new MediaStream(stream.getTracks());
+                        remoteStreamRef.current = updated;
+                        setRemoteStream(updated);
+                    };
+                } else if (remoteStreamIdRef.current === streamId) {
+                    // It's just a track being added to the existing camera stream, ignore 
+                    // (onaddtrack handles this, or just let React stay quiet)
+                } else {
+                    // It's a completely different stream ID! Must be the screen share.
+                    if (!remoteScreenStreamRef.current) {
+                        const screenStream = new MediaStream(stream.getTracks());
+                        remoteScreenStreamRef.current = screenStream;
+                        setRemoteScreenStream(screenStream);
+
+                        stream.onaddtrack = () => {
+                            const updated = new MediaStream(stream.getTracks());
+                            remoteScreenStreamRef.current = updated;
+                            setRemoteScreenStream(updated);
+                        };
+                        stream.onremovetrack = () => {
+                            if (stream.getTracks().length === 0) {
+                                remoteScreenStreamRef.current = null;
+                                setRemoteScreenStream(null);
+                            }
+                        };
+                    }
+                }
+            } else {
+                // Fallback
+                if (!remoteStreamRef.current) {
+                    remoteStreamRef.current = new MediaStream();
+                    setRemoteStream(remoteStreamRef.current);
+                }
+                remoteStreamRef.current.addTrack(track);
+                setRemoteStream(new MediaStream(remoteStreamRef.current.getTracks()));
             }
         };
 
@@ -269,42 +324,61 @@ export const VideoCallProvider = ({ children }) => {
     // ── Toggle Screen Share ───────────────────────────────────────────────────
     const toggleScreenShare = useCallback(async () => {
         const pc = peerRef.current;
-        if (!pc) return;
+        if (!pc || !socket) return;
+
+        const renegotiate = async () => {
+            try {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                const targetUserId = sessionInfoRef.current?.targetUserId || incomingDataRef.current?.from;
+                if (targetUserId) socket.emit('renegotiate_offer', { to: targetUserId, signal: offer });
+            } catch (err) {
+                console.error('[WebRTC] renegotiation failed:', err);
+            }
+        };
 
         if (isScreenSharing) {
-            // Switch back to camera track
-            const camTrack = myStreamRef.current?.getVideoTracks()[0];
-            const sender   = pc.getSenders().find(s => s.track?.kind === 'video');
-            if (sender && camTrack) await sender.replaceTrack(camTrack);
-            screenStreamRef.current?.getTracks().forEach(t => t.stop());
-            screenStreamRef.current = null;
+            // Stop sharing
+            if (screenSenderRef.current) {
+                pc.removeTrack(screenSenderRef.current);
+                screenSenderRef.current = null;
+            }
+            setScreenStream(prev => {
+                prev?.getTracks().forEach(t => t.stop());
+                return null;
+            });
             setIsScreenSharing(false);
+            await renegotiate();
         } else {
+            // Start sharing
             try {
-                const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-                screenStreamRef.current = screenStream;
-                const screenTrack = screenStream.getVideoTracks()[0];
-                const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-                if (sender) await sender.replaceTrack(screenTrack);
+                const newScreenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+                setScreenStream(newScreenStream);
+                const screenTrack = newScreenStream.getVideoTracks()[0];
+                
+                // Add the screen track as a NEW track so both camera and screen are sent
+                screenSenderRef.current = pc.addTrack(screenTrack, newScreenStream);
+                await renegotiate();
 
                 // Auto-revert when user stops sharing from browser UI
                 screenTrack.onended = async () => {
-                    const cam  = myStreamRef.current?.getVideoTracks()[0];
-                    const snd  = peerRef.current?.getSenders().find(s => s.track?.kind === 'video');
-                    if (snd && cam) await snd.replaceTrack(cam);
-                    screenStreamRef.current = null;
+                    if (screenSenderRef.current) {
+                        pc.removeTrack(screenSenderRef.current);
+                        screenSenderRef.current = null;
+                    }
+                    setScreenStream(null);
                     setIsScreenSharing(false);
+                    await renegotiate();
                 };
 
                 setIsScreenSharing(true);
             } catch (err) {
-                // User cancelled the screen-share picker — not an error
                 if (err.name !== 'NotAllowedError') {
                     console.error('[ScreenShare]', err);
                 }
             }
         }
-    }, [isScreenSharing]);
+    }, [isScreenSharing, socket]);
 
     // ── Start Recording (alumni only) ─────────────────────────────────────────
     // Records the remote (student) video+audio stream and downloads as .webm
@@ -417,12 +491,38 @@ export const VideoCallProvider = ({ children }) => {
         const onRecordingStarted = () => setIsBeingRecorded(true);
         const onRecordingStopped = () => setIsBeingRecorded(false);
 
+        const onRenegotiateOffer = async ({ signal }) => {
+            const pc = peerRef.current;
+            if (!pc) return;
+            try {
+                await pc.setRemoteDescription(new RTCSessionDescription(signal));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                const targetUserId = sessionInfoRef.current?.targetUserId || incomingDataRef.current?.from;
+                if (targetUserId) socket.emit('renegotiate_answer', { to: targetUserId, signal: answer });
+            } catch (e) {
+                console.error('[WebRTC] renegotiate offer:', e);
+            }
+        };
+
+        const onRenegotiateAnswer = async ({ signal }) => {
+            const pc = peerRef.current;
+            if (!pc) return;
+            try {
+                await pc.setRemoteDescription(new RTCSessionDescription(signal));
+            } catch (e) {
+                console.error('[WebRTC] renegotiate answer:', e);
+            }
+        };
+
         socket.on('incoming_call',     onIncomingCall);
         socket.on('call_accepted',     onCallAccepted);
         socket.on('ice_candidate',     onIceCandidate);
         socket.on('call_ended',        onCallEnded);
         socket.on('recording_started', onRecordingStarted);
         socket.on('recording_stopped', onRecordingStopped);
+        socket.on('renegotiate_offer', onRenegotiateOffer);
+        socket.on('renegotiate_answer', onRenegotiateAnswer);
 
         return () => {
             socket.off('incoming_call',     onIncomingCall);
@@ -431,6 +531,8 @@ export const VideoCallProvider = ({ children }) => {
             socket.off('call_ended',        onCallEnded);
             socket.off('recording_started', onRecordingStarted);
             socket.off('recording_stopped', onRecordingStopped);
+            socket.off('renegotiate_offer', onRenegotiateOffer);
+            socket.off('renegotiate_answer', onRenegotiateAnswer);
         };
     }, [socket, flushCandidates, cleanupCall, setCallStatus, setSessionInfo]);
 
@@ -440,6 +542,8 @@ export const VideoCallProvider = ({ children }) => {
                 callStatus,
                 myStream,
                 remoteStream,
+                remoteScreenStream,
+                screenStream,
                 isCameraOn,
                 isMicOn,
                 isScreenSharing,

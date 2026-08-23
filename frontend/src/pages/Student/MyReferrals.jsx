@@ -66,7 +66,7 @@ const MyReferrals = () => {
         {showForm && (
           <div className="card" style={{ marginBottom: 24 }}>
             <h3 style={{ marginBottom: 16 }}>Request a Referral</h3>
-            <p className="text-sm text-muted" style={{ marginBottom: 16 }}>You need the exact 24-character Alumni ID. Go to the <strong style={{ color: 'var(--clr-primary)' }}>Alumni Map</strong> or <strong style={{ color: 'var(--clr-primary)' }}>Find Alumni</strong> page, click "View Profile", and copy the User ID shown at the bottom. Do NOT type their name!</p>
+            <p className="text-sm text-muted" style={{ marginBottom: 16 }}>You need the exact 24-character Alumni ID. Go to the <strong style={{ color: 'var(--clr-primary)' }}>Find Alumni</strong> page, click "View Profile", and copy the User ID shown at the bottom. Do NOT type their name!</p>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
               <div className="form-group">
                 <label className="form-label">Alumni ID *</label>

@@ -43,7 +43,7 @@ const CtrlBtn = ({ icon, label, onClick, variant = '', disabled = false, title =
 const VideoCallModal = () => {
     const {
         callStatus,
-        myStream, remoteStream,
+        myStream, remoteStream, screenStream, remoteScreenStream,
         isCameraOn, isMicOn, isScreenSharing,
         isRecording, isBeingRecorded,
         remoteUserName,
@@ -122,7 +122,13 @@ const VideoCallModal = () => {
                 <div className="vc-stage">
 
                     {/* Remote video (large) */}
-                    {remoteStream ? (
+                    {remoteScreenStream ? (
+                        <VideoEl
+                            stream={remoteScreenStream}
+                            className="vc-remote-video"
+                            label={`${remoteUserName}'s screen`}
+                        />
+                    ) : remoteStream ? (
                         <VideoEl
                             stream={remoteStream}
                             className="vc-remote-video"
@@ -138,6 +144,7 @@ const VideoCallModal = () => {
                     {/* Remote name tag */}
                     <div className="vc-name-tag">
                         {remoteUserName}
+                        {remoteScreenStream ? ' (Screen)' : ''}
                         {isBeingRecorded && (
                             <span className="vc-being-recorded-badge">🔴 Recording</span>
                         )}
@@ -151,14 +158,25 @@ const VideoCallModal = () => {
                         </div>
                     )}
 
+                    {/* Remote face preview (when screen sharing) */}
+                    {remoteScreenStream && remoteStream && (
+                        <div className="vc-remote-preview">
+                            <VideoEl
+                                stream={remoteStream}
+                                className="vc-remote-small-video"
+                                label={`${remoteUserName}'s camera`}
+                            />
+                        </div>
+                    )}
+
                     {/* Self preview (bottom-right) */}
                     <div className="vc-self-preview">
-                        {myStream && isCameraOn ? (
+                        {(isScreenSharing ? screenStream : myStream) && isCameraOn ? (
                             <VideoEl
-                                stream={myStream}
+                                stream={isScreenSharing ? screenStream : myStream}
                                 muted
                                 className="vc-self-video"
-                                label="Your camera"
+                                label={isScreenSharing ? "Your screen" : "Your camera"}
                             />
                         ) : (
                             <div className="vc-self-cam-off">

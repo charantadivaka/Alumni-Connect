@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 import { PublicNavbar } from '../../components/layout/PublicNavbar';
 import '../../styles/Admin/AdminLogin.css';
+import '../../styles/Home/Login.css';
 
 const AdminLogin = () => {
   const { login } = useAuth();

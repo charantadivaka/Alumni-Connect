@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
-import { interviewService } from '../../services/mentorshipService';
+import { interviewService, slotService } from '../../services/mentorshipService';
 import { useVideoCall } from '../../context/VideoCallContext';
 import '../../styles/Alumni/InterviewRequests.css';
 
@@ -23,6 +23,11 @@ const InterviewRequests = () => {
   const [feedback, setFeedback] = useState({ strengths: '', improvements: '', rating: 5 });
   const [submitting, setSubmitting] = useState(false);
 
+  // Accept modal state
+  const [acceptTarget, setAcceptTarget] = useState(null);
+  const [slotForm, setSlotForm] = useState({ date: '', startTime: '', duration: '45', type: 'MockInterview' });
+  const [isAccepting, setIsAccepting] = useState(false);
+
   useEffect(() => {
     const fetchInterviews = async () => {
       try {
@@ -38,11 +43,33 @@ const InterviewRequests = () => {
   }, []);
 
   const handleRespond = async (id, status) => {
+    if (status === 'Accepted') {
+      const interview = interviews.find(i => i._id === id);
+      setAcceptTarget(interview);
+      setSlotForm({ date: '', startTime: '', duration: '45', type: 'MockInterview' });
+      return;
+    }
     try {
       await interviewService.respond(id, { status });
       setInterviews(prev => prev.map(i => i._id === id ? { ...i, status } : i));
     } catch (err) {
       alert(err.message || 'Action failed.');
+    }
+  };
+
+  const submitAccept = async (e) => {
+    e.preventDefault();
+    if (!slotForm.date || !slotForm.startTime) { alert('Date and Start Time are required.'); return; }
+    try {
+      setIsAccepting(true);
+      const newSlot = await slotService.create(slotForm);
+      await interviewService.respond(acceptTarget._id, { status: 'Accepted', slotId: newSlot._id });
+      setInterviews(prev => prev.map(i => i._id === acceptTarget._id ? { ...i, status: 'Accepted', slot: newSlot } : i));
+      setAcceptTarget(null);
+    } catch (err) {
+      alert(err.message || 'Failed to schedule and accept.');
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -167,42 +194,68 @@ const InterviewRequests = () => {
 
         {/* Feedback Modal */}
         {feedbackTarget && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
-            display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 20
-          }}>
-            <div className="card" style={{ width: '100%', maxWidth: 520, padding: 30, position: 'relative' }}>
-              <button onClick={() => setFeedbackTarget(null)}
-                style={{ position: 'absolute', top: 15, right: 15, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--clr-text-muted)' }}>
-                ✕
-              </button>
-              <h2 style={{ marginBottom: 5 }}>Interview Feedback</h2>
+          <div className="modal-overlay fade-in">
+            <div className="modal-content card" style={{ maxWidth: 500 }}>
+              <h3 style={{ marginTop: 0 }}>Provide Feedback</h3>
               <p className="text-muted" style={{ marginBottom: 20 }}>
-                For: {feedbackTarget.student?.name} — {feedbackTarget.interviewType} Interview
+                For <strong>{feedbackTarget.student?.name}</strong>.
               </p>
-              <form onSubmit={handleFeedbackSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-                <div className="form-group">
-                  <label className="form-label">Rating</label>
-                  <select className="form-input" value={feedback.rating} onChange={e => setFeedback(p => ({ ...p, rating: Number(e.target.value) }))}>
-                    <option value={5}>⭐⭐⭐⭐⭐ Excellent</option>
-                    <option value={4}>⭐⭐⭐⭐ Good</option>
-                    <option value={3}>⭐⭐⭐ Average</option>
-                    <option value={2}>⭐⭐ Below Average</option>
-                    <option value={1}>⭐ Poor</option>
-                  </select>
-                </div>
+              <form onSubmit={handleFeedbackSubmit}>
                 <div className="form-group">
                   <label className="form-label">Strengths</label>
-                  <textarea className="form-input" rows={3} value={feedback.strengths} onChange={e => setFeedback(p => ({ ...p, strengths: e.target.value }))} placeholder="What did the student do well?" />
+                  <textarea className="form-input" rows="3" value={feedback.strengths} onChange={e => setFeedback(p => ({...p, strengths: e.target.value}))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Areas for Improvement</label>
-                  <textarea className="form-input" rows={3} value={feedback.improvements} onChange={e => setFeedback(p => ({ ...p, improvements: e.target.value }))} placeholder="What should the student work on?" />
+                  <textarea className="form-input" rows="3" value={feedback.improvements} onChange={e => setFeedback(p => ({...p, improvements: e.target.value}))} />
                 </div>
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                <div className="form-group">
+                  <label className="form-label">Rating (1-5)</label>
+                  <input type="number" min="1" max="5" className="form-input" value={feedback.rating} onChange={e => setFeedback(p => ({...p, rating: e.target.value}))} />
+                </div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24 }}>
                   <button type="button" className="btn btn-ghost" onClick={() => setFeedbackTarget(null)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit & Complete'}</button>
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>
+                    {submitting ? 'Submitting...' : 'Submit Feedback'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Accept / Schedule Modal */}
+        {acceptTarget && (
+          <div className="modal-overlay fade-in">
+            <div className="modal-content card" style={{ maxWidth: 500 }}>
+              <h3 style={{ marginTop: 0 }}>Schedule &amp; Accept Interview</h3>
+              <p className="text-muted" style={{ marginBottom: 20 }}>
+                Provide a time slot for your mock interview with <strong>{acceptTarget.student?.name}</strong>.
+              </p>
+              <form onSubmit={submitAccept}>
+                <div className="grid-2" style={{ gap: 15, marginBottom: 15 }}>
+                  <div className="form-group">
+                    <label className="form-label">Date *</label>
+                    <input type="date" className="form-input" required value={slotForm.date} onChange={e => setSlotForm(p => ({...p, date: e.target.value}))} min={new Date().toISOString().split('T')[0]} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Start Time *</label>
+                    <input type="time" className="form-input" required value={slotForm.startTime} onChange={e => setSlotForm(p => ({...p, startTime: e.target.value}))} />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Duration (minutes)</label>
+                  <select className="form-input" value={slotForm.duration} onChange={e => setSlotForm(p => ({...p, duration: e.target.value}))}>
+                    <option value="30">30 min</option>
+                    <option value="45">45 min</option>
+                    <option value="60">60 min</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24 }}>
+                  <button type="button" className="btn btn-ghost" onClick={() => setAcceptTarget(null)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={isAccepting}>
+                    {isAccepting ? 'Scheduling...' : 'Accept Request'}
+                  </button>
                 </div>
               </form>
             </div>

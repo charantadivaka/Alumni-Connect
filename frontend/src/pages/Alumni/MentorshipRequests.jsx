@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
-import { mentorshipService } from '../../services/mentorshipService';
+import { mentorshipService, slotService } from '../../services/mentorshipService';
 import { useVideoCall } from '../../context/VideoCallContext';
 import '../../styles/Alumni/MentorshipRequests.css';
 
@@ -24,6 +24,11 @@ const MentorshipRequests = () => {
   const [sessionNotes, setSessionNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Accept modal state
+  const [acceptTarget, setAcceptTarget] = useState(null);
+  const [slotForm, setSlotForm] = useState({ date: '', startTime: '', duration: '45', type: 'Mentorship' });
+  const [isAccepting, setIsAccepting] = useState(false);
+
   useEffect(() => {
     const fetchSessions = async () => {
       try {
@@ -39,11 +44,33 @@ const MentorshipRequests = () => {
   }, []);
 
   const handleRespond = async (id, status) => {
+    if (status === 'Accepted') {
+      const session = sessions.find(s => s._id === id);
+      setAcceptTarget(session);
+      setSlotForm({ date: '', startTime: '', duration: '45', type: 'Mentorship' });
+      return;
+    }
     try {
       await mentorshipService.respond(id, { status });
       setSessions(prev => prev.map(s => s._id === id ? { ...s, status } : s));
     } catch (err) {
       alert(err.message || 'Action failed.');
+    }
+  };
+
+  const submitAccept = async (e) => {
+    e.preventDefault();
+    if (!slotForm.date || !slotForm.startTime) { alert('Date and Start Time are required.'); return; }
+    try {
+      setIsAccepting(true);
+      const newSlot = await slotService.create(slotForm);
+      await mentorshipService.respond(acceptTarget._id, { status: 'Accepted', slotId: newSlot._id });
+      setSessions(prev => prev.map(s => s._id === acceptTarget._id ? { ...s, status: 'Accepted', slot: newSlot } : s));
+      setAcceptTarget(null);
+    } catch (err) {
+      alert(err.message || 'Failed to schedule and accept.');
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -168,27 +195,65 @@ const MentorshipRequests = () => {
 
         {/* Complete Session Modal */}
         {completeTarget && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
-            display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 20
-          }}>
-            <div className="card" style={{ width: '100%', maxWidth: 480, padding: 30, position: 'relative' }}>
-              <button onClick={() => setCompleteTarget(null)}
-                style={{ position: 'absolute', top: 15, right: 15, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--clr-text-muted)' }}>
-                ✕
-              </button>
-              <h2 style={{ marginBottom: 5 }}>Complete Session</h2>
-              <p className="text-muted" style={{ marginBottom: 20 }}>Topic: {completeTarget.topic}</p>
-              <form onSubmit={handleComplete} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+          <div className="modal-overlay fade-in">
+            <div className="modal-content card" style={{ maxWidth: 500 }}>
+              <h3 style={{ marginTop: 0 }}>Complete Session</h3>
+              <p className="text-muted" style={{ marginBottom: 20 }}>
+                Leave any notes or summary for <strong>{completeTarget.student?.name}</strong>.
+              </p>
+              <form onSubmit={handleComplete}>
                 <div className="form-group">
-                  <label className="form-label">Session Notes</label>
-                  <textarea className="form-input" rows={4} value={sessionNotes} onChange={e => setSessionNotes(e.target.value)} placeholder="Key takeaways, action items, resources shared..." />
+                  <label className="form-label">Session Notes (Optional)</label>
+                  <textarea
+                    className="form-input"
+                    rows="4"
+                    placeholder="Key takeaways, next steps..."
+                    value={sessionNotes}
+                    onChange={(e) => setSessionNotes(e.target.value)}
+                  />
                 </div>
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24 }}>
                   <button type="button" className="btn btn-ghost" onClick={() => setCompleteTarget(null)}>Cancel</button>
                   <button type="submit" className="btn btn-primary" disabled={submitting}>
                     {submitting ? 'Saving...' : 'Mark Completed'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Accept / Schedule Modal */}
+        {acceptTarget && (
+          <div className="modal-overlay fade-in">
+            <div className="modal-content card" style={{ maxWidth: 500 }}>
+              <h3 style={{ marginTop: 0 }}>Schedule &amp; Accept Session</h3>
+              <p className="text-muted" style={{ marginBottom: 20 }}>
+                Provide a time slot for your session with <strong>{acceptTarget.student?.name}</strong>.
+              </p>
+              <form onSubmit={submitAccept}>
+                <div className="grid-2" style={{ gap: 15, marginBottom: 15 }}>
+                  <div className="form-group">
+                    <label className="form-label">Date *</label>
+                    <input type="date" className="form-input" required value={slotForm.date} onChange={e => setSlotForm(p => ({...p, date: e.target.value}))} min={new Date().toISOString().split('T')[0]} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Start Time *</label>
+                    <input type="time" className="form-input" required value={slotForm.startTime} onChange={e => setSlotForm(p => ({...p, startTime: e.target.value}))} />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Duration (minutes)</label>
+                  <select className="form-input" value={slotForm.duration} onChange={e => setSlotForm(p => ({...p, duration: e.target.value}))}>
+                    <option value="30">30 min</option>
+                    <option value="45">45 min</option>
+                    <option value="60">60 min</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24 }}>
+                  <button type="button" className="btn btn-ghost" onClick={() => setAcceptTarget(null)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={isAccepting}>
+                    {isAccepting ? 'Scheduling...' : 'Accept Request'}
                   </button>
                 </div>
               </form>

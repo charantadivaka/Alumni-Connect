@@ -56,7 +56,7 @@ const getMySessions = async (user) => {
  * If accepted, also fires an acceptance email (synchronously — no queue needed here
  * because the email utility is already non-blocking with its own try/catch).
  */
-const respondToSession = async (sessionId, status, alumniUser) => {
+const respondToSession = async (sessionId, status, slotId, alumniUser) => {
     if (!['Accepted', 'Rejected'].includes(status)) {
         throw Object.assign(new Error('Status must be Accepted or Rejected'), { statusCode: 400 });
     }
@@ -72,6 +72,10 @@ const respondToSession = async (sessionId, status, alumniUser) => {
     }
 
     session.status = status;
+    if (status === 'Accepted' && slotId) {
+        session.slot = slotId;
+        await MentorSlot.findByIdAndUpdate(slotId, { isBooked: true });
+    }
     await session.save();
 
     // Send email if accepted (non-blocking — wrapped in try/catch inside the util)

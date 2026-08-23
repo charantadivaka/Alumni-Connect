@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { jobService } from '../../services/jobService';
@@ -27,8 +27,8 @@ const SectionCard = ({ title, icon, color, children, linkTo, linkLabel }) => (
 );
 
 /* ── Item row ────────────────────────────────────────────────────────── */
-const ItemRow = ({ primary, secondary, badge, badgeClass = 'badge-primary' }) => (
-  <div className="item-row">
+const ItemRow = ({ primary, secondary, badge, badgeClass = 'badge-primary', onClick }) => (
+  <div className="item-row" onClick={onClick} style={onClick ? { cursor: 'pointer', transition: 'background 0.2s', '&:hover': { background: '#f8fafc' } } : {}}>
     <div className="item-row-info">
       <div className="item-row-primary">{primary}</div>
       {secondary && <div className="item-row-secondary">{secondary}</div>}
@@ -41,9 +41,9 @@ const EmptyMsg = ({ msg }) => (
   <p className="text-muted section-empty-msg">{msg}</p>
 );
 
-/* ── Dashboard ───────────────────────────────────────────────────────── */
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [jobs, setJobs]               = useState([]);
   const [mentorships, setMentorships] = useState([]);
@@ -83,11 +83,15 @@ const Dashboard = () => {
     }
   };
 
+  const upcomingActivities = [
+    ...mentorships.filter(m => m.slot).map(m => ({ ...m, activityType: 'Mentorship' })),
+    ...interviews.filter(i => i.slot).map(i => ({ ...i, activityType: 'Mock Interview' }))
+  ].sort((a, b) => new Date(a.slot.date) - new Date(b.slot.date));
+
   return (
     <div className="dashboard-layout">
       <Sidebar />
       <main className="dashboard-main fade-in">
-
         <div className="page-header">
           <h1>Welcome back, {user?.name?.split(' ')?.[0] || 'Student'}! 👋</h1>
           <p>Here's a snapshot of your network activity and opportunities.</p>
@@ -98,83 +102,66 @@ const Dashboard = () => {
             <span className="spinner" /> Loading…
           </div>
         ) : (
-          <div className="student-dashboard-grid">
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+              <Link to="/student/circle" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 20px', textAlign: 'center', height: '100%', cursor: 'pointer', transition: 'transform 0.2s', borderTop: '4px solid #6c63ff' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                  <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🤝</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '10px 0' }}>{connections.length}</div>
+                  <div style={{ fontSize: '1rem', color: 'var(--clr-text-muted)' }}>Requests</div>
+                </div>
+              </Link>
+              <Link to="/student/jobs-hub/mentorship" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 20px', textAlign: 'center', height: '100%', cursor: 'pointer', transition: 'transform 0.2s', borderTop: '4px solid #22d3a3' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                  <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🎓</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '10px 0' }}>{mentorships.length}</div>
+                  <div style={{ fontSize: '1rem', color: 'var(--clr-text-muted)' }}>Mentorships</div>
+                </div>
+              </Link>
+              <Link to="/student/jobs-hub/interviews" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 20px', textAlign: 'center', height: '100%', cursor: 'pointer', transition: 'transform 0.2s', borderTop: '4px solid #00d4ff' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                  <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🎤</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '10px 0' }}>{interviews.length}</div>
+                  <div style={{ fontSize: '1rem', color: 'var(--clr-text-muted)' }}>Interviews</div>
+                </div>
+              </Link>
+            </div>
 
-            {/* ── Pending Connections ─────────────────────────────────── */}
-            <SectionCard title="Pending Connection Requests" icon="🤝" color="#6c63ff" linkTo="/student/circle" linkLabel="View My Circle →">
-              {connections.length === 0
-                ? <EmptyMsg msg="No pending connection requests." />
-                : connections.slice(0, 4).map(c => (
-                    <div key={c._id} className="conn-item" style={{ flexWrap: 'wrap' }}>
-                      <div className="avatar-placeholder avatar-sm conn-item-avatar">
-                        {c.sender?.profilePicture
-                          ? <img src={c.sender.profilePicture} alt={c.sender.name} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }} />
-                          : c.sender?.name?.[0]?.toUpperCase()}
-                      </div>
-                      <div className="conn-item-info">
-                        <div className="conn-item-name">{c.sender?.name || 'Unknown'}</div>
-                        <div className="conn-item-role">
-                          {c.sender?.role}{c.sender?.company ? ` · ${c.sender.company}` : ''}
-                        </div>
-                      </div>
-                      <div className="conn-actions">
-                        <button className="btn btn-success btn-sm" onClick={() => handleConnectionRespond(c._id, 'Accepted')}>Accept</button>
-                        <button className="btn btn-outline btn-sm" onClick={() => handleConnectionRespond(c._id, 'Rejected')}>Reject</button>
-                      </div>
-                    </div>
-                  ))
-              }
-            </SectionCard>
+            <div className="student-dashboard-grid">
+              {/* ── Upcoming Activities ─────────────────────────────── */}
+              <SectionCard title="Upcoming Activities" icon="📅" color="#ff6b6b">
+                {upcomingActivities.length === 0
+                  ? <EmptyMsg msg="No upcoming scheduled activities." />
+                  : upcomingActivities.map(act => (
+                      <ItemRow
+                        key={act._id}
+                        primary={act.activityType === 'Mentorship' ? act.topic : `${act.targetRole} (${act.interviewType})`}
+                        secondary={`Alumni: ${act.alumni?.name || ''} | 🕐 ${act.slot.startTime} | ⏱ ${act.slot.duration} min`}
+                        badge={`📅 ${new Date(act.slot.date).toLocaleDateString()}`}
+                        badgeClass={act.activityType === 'Mentorship' ? 'badge-success' : 'badge-cyan'}
+                        onClick={() => navigate(act.activityType === 'Mentorship' ? '/student/jobs-hub/mentorship' : '/student/jobs-hub/interviews')}
+                      />
+                    ))
+                }
+              </SectionCard>
 
-            {/* ── Active Mentorships ───────────────────────────────── */}
-            <SectionCard title="Active Mentorships" icon="🎓" color="#22d3a3" linkTo="/student/jobs-hub" linkLabel="Go to Mentorship →">
-              {mentorships.length === 0
-                ? <EmptyMsg msg="No active mentorships. Visit Jobs → Mentorship to get started." />
-                : mentorships.map(m => (
-                    <ItemRow
-                      key={m._id}
-                      primary={m.topic}
-                      secondary={`Mentor: ${m.alumni?.name || ''}${m.alumni?.company ? ` (${m.alumni.company})` : ''}`}
-                      badge={m.slot ? `📅 ${new Date(m.slot.date).toLocaleDateString()}` : 'Accepted'}
-                      badgeClass="badge-success"
-                    />
-                  ))
-              }
-            </SectionCard>
-
-            {/* ── Active Interviews ────────────────────────────────── */}
-            <SectionCard title="Active Interviews" icon="🎤" color="#00d4ff" linkTo="/student/jobs-hub" linkLabel="Go to Mock Interviews →">
-              {interviews.length === 0
-                ? <EmptyMsg msg="No active mock interviews. Visit Jobs → Mock Interviews to schedule one." />
-                : interviews.map(i => (
-                    <ItemRow
-                      key={i._id}
-                      primary={`${i.targetRole} (${i.interviewType})`}
-                      secondary={`Interviewer: ${i.alumni?.name || ''}${i.alumni?.company ? ` (${i.alumni.company})` : ''}`}
-                      badge={i.slot ? `📅 ${new Date(i.slot.date).toLocaleDateString()}` : 'Accepted'}
-                      badgeClass="badge-cyan"
-                    />
-                  ))
-              }
-            </SectionCard>
-
-            {/* ── Latest Opportunities ─────────────────────────────── */}
-            <SectionCard title="Latest Opportunities" icon="💼" color="#fbbf24" linkTo="/student/jobs-hub" linkLabel="Browse All Jobs →">
-              {jobs.length === 0
-                ? <EmptyMsg msg="No job postings available yet. Check back soon!" />
-                : jobs.map(job => (
-                    <ItemRow
-                      key={job._id}
-                      primary={job.title}
-                      secondary={`${job.company} · ${job.location}`}
-                      badge={job.jobType}
-                      badgeClass="badge-warning"
-                    />
-                  ))
-              }
-            </SectionCard>
-
-          </div>
+              {/* ── Latest Opportunities ─────────────────────────────── */}
+              <SectionCard title="Latest Opportunities" icon="💼" color="#fbbf24" linkTo="/student/jobs-hub" linkLabel="Browse All Jobs →">
+                {jobs.length === 0
+                  ? <EmptyMsg msg="No job postings available yet. Check back soon!" />
+                  : jobs.map(job => (
+                      <ItemRow
+                        key={job._id}
+                        primary={job.title}
+                        secondary={`${job.company} · ${job.location}`}
+                        badge={job.jobType}
+                        badgeClass="badge-warning"
+                      />
+                    ))
+                }
+              </SectionCard>
+            </div>
+          </>
         )}
       </main>
     </div>

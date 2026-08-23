@@ -30,8 +30,8 @@ const getMySessions = async (req, res, next) => {
 
 const respondToSession = async (req, res, next) => {
     try {
-        const { status } = req.body;
-        const session = await mentorshipService.respondToSession(req.params.id, status, req.user);
+        const { status, slotId } = req.body;
+        const session = await mentorshipService.respondToSession(req.params.id, status, slotId, req.user);
         
         const { sendNotification } = require('../../shared/services/notificationService');
         await sendNotification(session.student._id, 'mentorship_response',

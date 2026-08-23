@@ -28,6 +28,7 @@ const StudentProfile = () => {
     skills: '',
     college: '',       // college ObjectId
     collegeRollNumber: '',
+    graduationYear: '',
   });
 
   // Selected college object (for showing pattern hint)
@@ -55,6 +56,7 @@ const StudentProfile = () => {
           skills: (data.skills || []).join(', '),
           college: currentCollege,
           collegeRollNumber: data.collegeRollNumber || '',
+          graduationYear: data.graduationYear || '',
         });
 
         // Set the selected college object so hint shows immediately
@@ -252,6 +254,9 @@ const StudentProfile = () => {
                     🏛️ {profile.college.name}
                   </span>
                 )}
+                <div style={{ marginTop: 8, fontSize: '0.85rem', color: 'var(--clr-text-muted)' }}>
+                  Expected Graduation Year: <strong style={{ color: 'var(--clr-text)' }}>{profile?.graduationYear || '---'}</strong>
+                </div>
               </div>
             </div>
 
@@ -280,7 +285,7 @@ const StudentProfile = () => {
                   {colleges.length === 0 ? (
                     <input className="form-input" value="No colleges added by admin yet" disabled style={{ opacity: 0.6 }} />
                   ) : (
-                    <select className="form-input" value={form.college} onChange={handleCollegeChange}>
+                    <select className="form-input" value={form.college} disabled style={{ opacity: 0.6 }}>
                       <option value="">— Select your college —</option>
                       {colleges.map(c => (
                         <option key={c._id} value={c._id}>{c.name}</option>
@@ -328,7 +333,13 @@ const StudentProfile = () => {
               {/* Department */}
               <div className="form-group">
                 <label className="form-label">Department / Major</label>
-                <input type="text" name="department" className="form-input" value={form.department} onChange={handleChange} placeholder="e.g. Computer Science" />
+                <input type="text" name="department" className="form-input" value={form.department} disabled style={{ opacity: 0.6 }} placeholder="e.g. Computer Science" />
+              </div>
+
+              {/* Expected Graduation Year */}
+              <div className="form-group">
+                <label className="form-label">Expected Graduation Year</label>
+                <input type="number" name="graduationYear" className="form-input" value={form.graduationYear} onChange={handleChange} placeholder="e.g. 2026" min="2000" max="2100" />
               </div>
 
               {/* Bio */}

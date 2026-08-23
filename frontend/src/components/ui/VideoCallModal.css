@@ -285,6 +285,34 @@
     display: block;
 }
 
+/* ── Remote-preview (picture-in-picture) during screen share ─────────────── */
+.vc-remote-preview {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    width: 190px;
+    height: 142px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+    background: #1a1f35;
+    transition: transform 0.2s ease;
+    cursor: default;
+    z-index: 10;
+}
+
+.vc-remote-preview:hover {
+    transform: scale(1.04);
+}
+
+.vc-remote-small-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 .vc-self-cam-off {
     width: 100%;
     height: 100%;

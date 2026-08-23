@@ -48,7 +48,7 @@ const getMyInterviews = async (user) => {
  * Respond to an interview request (alumni only).
  * Returns { interview, studentId } for notifications.
  */
-const respondInterview = async (interviewId, status, alumniUser) => {
+const respondInterview = async (interviewId, status, slotId, alumniUser) => {
     if (!['Accepted', 'Rejected'].includes(status)) {
         throw Object.assign(new Error('Invalid status'), { statusCode: 400 });
     }
@@ -61,6 +61,10 @@ const respondInterview = async (interviewId, status, alumniUser) => {
     }
 
     interview.status = status;
+    if (status === 'Accepted' && slotId) {
+        interview.slot = slotId;
+        await MentorSlot.findByIdAndUpdate(slotId, { isBooked: true });
+    }
     await interview.save();
 
     return { interview, studentId: interview.student };

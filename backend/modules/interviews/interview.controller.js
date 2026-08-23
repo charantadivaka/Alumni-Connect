@@ -30,8 +30,8 @@ const getMyInterviews = async (req, res, next) => {
 
 const respondInterview = async (req, res, next) => {
     try {
-        const { status } = req.body;
-        const { interview, studentId } = await interviewService.respondInterview(req.params.id, status, req.user);
+        const { status, slotId } = req.body;
+        const { interview, studentId } = await interviewService.respondInterview(req.params.id, status, slotId, req.user);
         
         const { sendNotification } = require('../../shared/services/notificationService');
         await sendNotification(studentId, 'interview_response',

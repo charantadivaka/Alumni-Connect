@@ -84,6 +84,14 @@ const initSocketManager = (server) => {
             io.to(to).emit('ice_candidate', { candidate });
         });
 
+        socket.on('renegotiate_offer', ({ to, signal }) => {
+            io.to(to).emit('renegotiate_offer', { signal });
+        });
+
+        socket.on('renegotiate_answer', ({ to, signal }) => {
+            io.to(to).emit('renegotiate_answer', { signal });
+        });
+
         socket.on('end_call', ({ to }) => {
             io.to(to).emit('call_ended');
         });
