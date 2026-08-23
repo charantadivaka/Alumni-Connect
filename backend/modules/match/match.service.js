@@ -11,13 +11,71 @@ const { getMatchedAlumni } = require('../../utils/matchingAlgorithm');
 const { escapeRegex }       = require('../../shared/utils/escapeRegex');
 const { esClient }          = require('../../config/elasticsearch');
 
+async function applySearchAndFilters(filter, query, excludeUserId) {
+    const { industry, availability, skill, search } = query;
+
+    if (industry) filter.industry = { $regex: escapeRegex(industry), $options: 'i' };
+    if (availability === 'true') filter.mentorshipAvailability = 'Available';
+    if (skill) filter.skills = { $in: [new RegExp(escapeRegex(skill), 'i')] };
+
+    // Try Elasticsearch first for fast fuzzy search, fall back to MongoDB regex on error
+    if (search) {
+        let userIds = null;
+        if (esClient) {
+            try {
+                const { hits } = await esClient.search({
+                    index: 'users',
+                    body: {
+                        query: {
+                            bool: {
+                                must: [
+                                    { match: { role: 'alumni' } },
+                                    {
+                                        multi_match: {
+                                            query: search,
+                                            fields: ['name^3', 'company^2', 'designation^2', 'skills', 'industry'],
+                                            fuzziness: 'AUTO',
+                                            operator: 'or'
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        _source: false,
+                        size: 500
+                    }
+                });
+                userIds = hits.hits.map(h => h._id);
+            } catch (err) {
+                console.error('[Elasticsearch] User search failed, falling back to MongoDB regex:', err.message);
+            }
+        }
+
+        if (userIds !== null) {
+            // ES returned results (may be empty — honour that)
+            filter._id = { $in: userIds, $ne: excludeUserId };
+        } else {
+            // ES not available — use MongoDB regex
+            const terms = search.trim().split(/\s+/).map(escapeRegex);
+            filter.$and = terms.map(term => ({
+                $or: [
+                    { name:        { $regex: term, $options: 'i' } },
+                    { company:     { $regex: term, $options: 'i' } },
+                    { designation: { $regex: term, $options: 'i' } },
+                    { industry:    { $regex: term, $options: 'i' } },
+                    { skills:      { $regex: term, $options: 'i' } }
+                ]
+            }));
+        }
+    }
+}
+
 /**
  * Get smart-matched alumni for logged-in student.
  * Hard boundary: Students ONLY see alumni from their own college.
  */
 const getMatches = async (studentUser, query) => {
     const student = await User.findById(studentUser._id).populate('college', 'name');
-    const { industry, availability, skill, search } = query;
 
     if (!student || !student.college) {
         return { alumni: [], noCollege: true, collegeName: '', total: 0, totalPages: 1 };
@@ -31,50 +89,7 @@ const getMatches = async (studentUser, query) => {
         college: student.college._id,
     };
 
-    if (industry)      filter.industry = { $regex: escapeRegex(industry), $options: 'i' };
-    if (availability === 'true') filter.mentorshipAvailability = 'Available';
-    if (skill)         filter.skills = { $in: [new RegExp(escapeRegex(skill), 'i')] };
-    let userIds = null;
-
-    if (search && esClient) {
-        try {
-            const { hits } = await esClient.search({
-                index: 'users',
-                body: {
-                    query: {
-                        bool: {
-                            must: [
-                                { match: { role: 'alumni' } },
-                                {
-                                    multi_match: {
-                                        query: search,
-                                        fields: ['name^3', 'company^2', 'designation', 'skills', 'industry'],
-                                        fuzziness: 'AUTO'
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    _source: false,
-                    size: 1000
-                }
-            });
-            userIds = hits.hits.map(h => h._id);
-        } catch (err) {
-            console.error('[Elasticsearch] User search failed, falling back to MongoDB:', err.message);
-        }
-    }
-
-    if (userIds !== null) {
-        filter._id = { $in: userIds, $ne: student._id };
-    } else if (search) {
-        const safe = escapeRegex(search);
-        filter.$or = [
-            { name: { $regex: safe, $options: 'i' } },
-            { company: { $regex: safe, $options: 'i' } },
-            { designation: { $regex: safe, $options: 'i' } },
-        ];
-    }
+    await applySearchAndFilters(filter, query, student._id);
 
     const alumni = await User.find(filter)
         .populate('college', 'name')
@@ -111,6 +126,8 @@ const getDirectory = async (requesterUser, query) => {
     if (requester.college) {
         filter.college = requester.college._id;
     }
+
+    await applySearchAndFilters(filter, query, requesterUser._id);
 
     const page  = parseInt(query.page, 10) || 1;
     const limit = parseInt(query.limit, 10) || 50;

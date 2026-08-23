@@ -21,11 +21,16 @@ const buildJobFilter = ({ search, type, location, skill }) => {
     const filter = { isActive: true };
 
     if (search) {
-        const safe = escapeRegex(search);
-        filter.$or = [
-            { title:   { $regex: safe, $options: 'i' } },
-            { company: { $regex: safe, $options: 'i' } },
-        ];
+        const terms = search.trim().split(/\s+/).filter(t => t).map(escapeRegex);
+        if (terms.length > 0) {
+            filter.$and = terms.map(term => ({
+                $or: [
+                    { title:    { $regex: term, $options: 'i' } },
+                    { company:  { $regex: term, $options: 'i' } },
+                    { location: { $regex: term, $options: 'i' } },
+                ]
+            }));
+        }
     }
     if (type)     filter.jobType  = type;
     if (location) filter.location = { $regex: escapeRegex(location), $options: 'i' };
@@ -36,17 +41,18 @@ const buildJobFilter = ({ search, type, location, skill }) => {
 
 /**
  * Fetch paginated list of active jobs.
- * Uses Elasticsearch if available and searching by text, otherwise falls back to MongoDB.
+ * Uses Elasticsearch for text search (fast, fuzzy), falls back to MongoDB regex if ES errors.
  */
 const getAllJobs = async (query) => {
     const page   = parseInt(query.page,  10) || 1;
     const limit  = parseInt(query.limit, 10) || 50;
     const skip   = (page - 1) * limit;
 
-    let jobIds = null;
+    const filter = buildJobFilter(query);
 
-    // Use Elasticsearch if we have a search term and the client is ready
+    // Override text-search part with ES results if ES is available
     if (query.search && esClient) {
+        let jobIds = null;
         try {
             const { hits } = await esClient.search({
                 index: 'jobs',
@@ -58,35 +64,36 @@ const getAllJobs = async (query) => {
                                 {
                                     multi_match: {
                                         query: query.search,
-                                        fields: ['title^3', 'company^2', 'description'],
-                                        fuzziness: 'AUTO'
+                                        fields: ['title^3', 'company^2', 'location', 'description'],
+                                        fuzziness: 'AUTO',
+                                        operator: 'or'
                                     }
                                 }
                             ]
                         }
                     },
-                    _source: false, // We only need the IDs
-                    size: 1000 // Limit max results from ES to prevent massive IN queries
+                    _source: false,
+                    size: 500
                 }
             });
             jobIds = hits.hits.map(h => h._id);
         } catch (err) {
-            console.error('[Elasticsearch] Job search failed, falling back to MongoDB:', err.message);
+            console.error('[Elasticsearch] Job search failed, falling back to MongoDB regex:', err.message);
         }
-    }
 
-    const filter = buildJobFilter(query);
-    // If ES returned IDs, override the search filter to just fetch those IDs
-    if (jobIds !== null) {
-        delete filter.$or;
-        filter._id = { $in: jobIds };
+        if (jobIds !== null) {
+            // ES returned IDs (may be empty — honour it as a valid empty result)
+            delete filter.$and;
+            filter._id = { $in: jobIds };
+        }
+        // If jobIds is null (ES error), filter already has the MongoDB $and regex from buildJobFilter
     }
 
     const [total, jobs] = await Promise.all([
         Job.countDocuments(filter),
         Job.find(filter)
             .populate('postedBy', 'name company designation profilePicture')
-            .sort(jobIds ? { _id: 1 } : { createdAt: -1 }) // Sort by ES score implicitly if using ES
+            .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit),
     ]);
