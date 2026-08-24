@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { bookmarkService } from '../../services/otherServices';
+import { JobModal } from '../../components/ui/JobModal';
 import '../../styles/Student/SavedItems.css';
 
 const MODEL_LABELS = {
@@ -35,47 +37,12 @@ const DetailModal = ({ bm, onClose, onRemove }) => {
   const meta = MODEL_LABELS[bm.refModel] || { icon: '🔖', label: bm.refModel };
   const d = bm.details || {};
 
+  if (bm.refModel === 'Job') {
+    return <JobModal selectedJob={d} closeModal={onClose} />;
+  }
+
   const renderDetails = () => {
     switch (bm.refModel) {
-      case 'Job':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {d.company && <span className="badge badge-primary">🏢 {d.company}</span>}
-              {d.location && <span className="badge badge-cyan">📍 {d.location}</span>}
-              {d.type && <span className="badge badge-success">{d.type}</span>}
-              {d.salary && <span className="badge badge-warning">💰 {d.salary}</span>}
-            </div>
-            {d.description && (
-              <div>
-                <p style={{ fontWeight: 600, marginBottom: 6, color: 'var(--clr-text)' }}>Description</p>
-                <p style={{ margin: 0, lineHeight: 1.7 }}>{d.description}</p>
-              </div>
-            )}
-            {d.requirements && d.requirements.length > 0 && (
-              <div>
-                <p style={{ fontWeight: 600, marginBottom: 8, color: 'var(--clr-text)' }}>Requirements</p>
-                <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {d.requirements.map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
-              </div>
-            )}
-            {d.skills && d.skills.length > 0 && (
-              <div>
-                <p style={{ fontWeight: 600, marginBottom: 8, color: 'var(--clr-text)' }}>Skills</p>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {d.skills.map((s, i) => <span key={i} className="tag">{s}</span>)}
-                </div>
-              </div>
-            )}
-            {d.deadline && (
-              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--clr-text-muted)' }}>
-                ⏰ Deadline: {new Date(d.deadline).toLocaleDateString()}
-              </p>
-            )}
-          </div>
-        );
-
       case 'Event':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -200,6 +167,7 @@ const DetailModal = ({ bm, onClose, onRemove }) => {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 const SavedItems = () => {
+  const navigate = useNavigate();
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -301,7 +269,14 @@ const SavedItems = () => {
                     <button
                       className="btn btn-ghost btn-sm"
                       style={{ color: 'var(--clr-primary)' }}
-                      onClick={e => { e.stopPropagation(); setSelectedBm(bm); }}
+                      onClick={e => { 
+                        e.stopPropagation(); 
+                        if (bm.refModel === 'Story') {
+                           navigate(`../community?tab=stories&storyId=${bm.refId}`);
+                        } else {
+                           setSelectedBm(bm); 
+                        }
+                      }}
                     >
                       View Details →
                     </button>

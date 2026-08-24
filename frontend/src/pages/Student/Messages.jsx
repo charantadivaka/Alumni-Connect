@@ -9,15 +9,16 @@ const MOBILE_BREAKPOINT = 768;
 
 const Messages = () => {
   const { user } = useAuth();
-  const [threads, setThreads]             = useState([]);
-  const [connections, setConnections]     = useState([]);
+  const [threads, setThreads]                 = useState([]);
+  const [connections, setConnections]         = useState([]);
   const [loadingThreads, setLoadingThreads]   = useState(true);
-  const [activeThread, setActiveThread]   = useState(null);
+  const [activeThread, setActiveThread]       = useState(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [text, setText]                   = useState('');
-  const [sending, setSending]             = useState(false);
-  const [showContacts, setShowContacts]   = useState(false);
-  const [isMobile, setIsMobile]           = useState(window.innerWidth <= MOBILE_BREAKPOINT);
+  const [text, setText]                       = useState('');
+  const [sending, setSending]                 = useState(false);
+  const [showContacts, setShowContacts]       = useState(false);
+  const [contactSearch, setContactSearch]     = useState('');
+  const [isMobile, setIsMobile]               = useState(window.innerWidth <= MOBILE_BREAKPOINT);
   const [showConversation, setShowConversation] = useState(false);
   const messagesEndRef = useRef(null);
 
@@ -98,6 +99,10 @@ const Messages = () => {
   const circleMembers = connections.map(c => getOther(c)).filter(Boolean);
   const threadPartnerIds = new Set(threads.map(t => t.partner._id));
   const newContactCandidates = circleMembers.filter(p => !threadPartnerIds.has(p._id));
+  
+  const filteredCircleMembers = circleMembers.filter(p => 
+    p.name?.toLowerCase().includes(contactSearch.toLowerCase())
+  );
 
   const isConnected = !activeThread?.partner || connections.some(c => 
     c.sender?._id === activeThread.partner._id || 
@@ -122,7 +127,10 @@ const Messages = () => {
               <h2 style={{ margin: 0, fontSize: '1.05rem' }}>Messages</h2>
               <button
                 className="btn btn-primary btn-sm"
-                onClick={() => setShowContacts(v => !v)}
+                onClick={() => {
+                  setShowContacts(v => !v);
+                  if (showContacts) setContactSearch('');
+                }}
                 title="Start a new conversation with someone in My Circle"
               >
                 + New
@@ -135,14 +143,24 @@ const Messages = () => {
               {/* My Circle contacts picker */}
               {showContacts && (
                 <div style={{ borderBottom: '1px solid var(--clr-border)', background: 'var(--clr-bg-elevated)' }}>
+                  <div style={{ padding: '8px 14px', borderBottom: '1px solid var(--clr-border)' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Search contacts..." 
+                      className="form-input" 
+                      value={contactSearch}
+                      onChange={(e) => setContactSearch(e.target.value)}
+                      style={{ width: '100%', fontSize: '0.8rem', padding: '6px 10px', height: 'auto' }}
+                    />
+                  </div>
                   <div style={{ padding: '8px 14px', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--clr-text-faint)', letterSpacing: 1 }}>
                     My Circle
                   </div>
-                  {circleMembers.length === 0 ? (
+                  {filteredCircleMembers.length === 0 ? (
                     <div style={{ padding: '10px 14px', fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
                       No connections yet. Add people in Network.
                     </div>
-                  ) : circleMembers.map(person => (
+                  ) : filteredCircleMembers.map(person => (
                     <div
                       key={person._id}
                       onClick={() => startChatWithConnection(person)}

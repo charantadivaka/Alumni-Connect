@@ -12,6 +12,8 @@ const { checkAndAwardBadges } = require('../../utils/badgeService');
 
 const STORY_CACHE_PATTERN = '__express__:*:/api/stories*';
 
+const { escapeRegex } = require('../../shared/utils/escapeRegex');
+
 /** Get all published stories (filtered by college if user is student/alumni). */
 const getStories = async (user, query) => {
     const filter = { isPublished: true };
@@ -24,15 +26,35 @@ const getStories = async (user, query) => {
         ];
     }
 
+    if (query.category) {
+        filter.category = query.category;
+    }
+
+    if (query.search) {
+        const regex = new RegExp(escapeRegex(query.search), 'i');
+        const searchFilter = { $or: [{ title: regex }, { content: regex }, { tags: regex }] };
+        if (filter.$or) {
+            filter.$and = [ searchFilter, { $or: filter.$or } ];
+            delete filter.$or;
+        } else {
+            Object.assign(filter, searchFilter);
+        }
+    }
+
     const page  = parseInt(query.page, 10) || 1;
     const limit = parseInt(query.limit, 10) || 20;
     const skip  = (page - 1) * limit;
 
+    let sortObj = { createdAt: -1 };
+    if (query.sort === 'trending') {
+        sortObj = { likeCount: -1, createdAt: -1 };
+    }
+
     const [total, stories] = await Promise.all([
         Story.countDocuments(filter),
         Story.find(filter)
-            .populate('author', 'name profilePicture company designation graduationYear')
-            .sort({ createdAt: -1 })
+            .populate('author', 'name profilePicture company designation graduationYear department role')
+            .sort(sortObj)
             .skip(skip)
             .limit(limit),
     ]);
@@ -69,7 +91,8 @@ const likeStory = async (storyId, userId) => {
     } else {
         story.likes.splice(idx, 1);
     }
-
+    
+    story.likeCount = story.likes.length;
     await story.save();
     await invalidatePattern(STORY_CACHE_PATTERN);
     return { likes: story.likes.length, liked: idx === -1 };

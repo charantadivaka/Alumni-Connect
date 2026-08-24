@@ -238,6 +238,12 @@
   border-radius: var(--r-lg);
   overflow: hidden;
   box-shadow: var(--shadow-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.section-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
 .section-card-header {
@@ -288,6 +294,20 @@
   background: var(--clr-bg-elevated);
   border: 1px solid var(--clr-border);
   justify-content: space-between;
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.item-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.item-row-clickable {
+  cursor: pointer;
+}
+
+.item-row-clickable:hover {
+  /* Removed white background color per user request, keeping only the transform/shadow from .item-row:hover */
 }
 
 .item-row-info {

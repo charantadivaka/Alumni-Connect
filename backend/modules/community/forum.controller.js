@@ -57,7 +57,50 @@ const deleteThread = async (req, res, next) => {
     }
 };
 
+const editThread = async (req, res, next) => {
+    try {
+        const thread = await forumService.editThread(req.params.id, req.body, req.user);
+        sendSuccess(res, thread, 'Thread updated');
+    } catch (err) { next(err); }
+};
+
+const editReply = async (req, res, next) => {
+    try {
+        const reply = await forumService.editReply(req.params.id, req.params.replyId, req.body.content, req.user);
+        sendSuccess(res, reply, 'Reply updated');
+    } catch (err) { next(err); }
+};
+
+const deleteReply = async (req, res, next) => {
+    try {
+        await forumService.deleteReply(req.params.id, req.params.replyId, req.user);
+        sendSuccess(res, null, 'Reply deleted');
+    } catch (err) { next(err); }
+};
+
+const acceptReply = async (req, res, next) => {
+    try {
+        const status = await forumService.acceptReply(req.params.id, req.params.replyId, req.user);
+        sendSuccess(res, { isAccepted: status }, status ? 'Reply accepted' : 'Reply unaccepted');
+    } catch (err) { next(err); }
+};
+
+const toggleFollow = async (req, res, next) => {
+    try {
+        const result = await forumService.toggleFollow(req.params.id, req.user._id);
+        sendSuccess(res, result, result.isFollowing ? 'Followed thread' : 'Unfollowed thread');
+    } catch (err) { next(err); }
+};
+
+const reportContent = async (req, res, next) => {
+    try {
+        await forumService.reportContent(req.params.id, req.body.replyId, req.user._id);
+        sendSuccess(res, null, 'Content reported successfully');
+    } catch (err) { next(err); }
+};
+
 module.exports = {
     getThreads, getThreadById, createThread,
-    addReply, upvoteThread, deleteThread
+    addReply, upvoteThread, deleteThread,
+    editThread, editReply, deleteReply, acceptReply, toggleFollow, reportContent
 };

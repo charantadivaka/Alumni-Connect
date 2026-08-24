@@ -12,10 +12,34 @@ const { checkAndAwardBadges } = require('../../utils/badgeService');
 
 const EVENT_CACHE_PATTERN = '__express__:*:/api/events*';
 
+const { escapeRegex } = require('../../shared/utils/escapeRegex');
+
 /** Build filter scoped to user's college (admins see all). */
-const buildEventFilter = (user, category) => {
+const buildEventFilter = (user, query) => {
     const filter = { isActive: true };
-    if (category) filter.category = category;
+    if (query.category) filter.category = query.category;
+    if (query.status) filter.status = query.status;
+
+    if (query.search) {
+        filter.title = { $regex: escapeRegex(query.search), $options: 'i' };
+    }
+
+    if (query.timeframe) {
+        const now = new Date();
+        const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+        if (query.timeframe === 'Upcoming') {
+            filter.date = { $gte: twoHoursAgo };
+        } else if (query.timeframe === 'Past') {
+            filter.date = { $lt: twoHoursAgo };
+        }
+    } else if (query.date) {
+        // Match exact date (day boundary)
+        const startOfDay = new Date(query.date);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(query.date);
+        endOfDay.setHours(23, 59, 59, 999);
+        filter.date = { $gte: startOfDay, $lte: endOfDay };
+    }
 
     if (user && user.role !== 'admin' && user.college) {
         filter.$or = [
@@ -29,7 +53,7 @@ const buildEventFilter = (user, category) => {
 
 /** Fetch paginated active events. */
 const getAllEvents = async (user, query) => {
-    const filter = buildEventFilter(user, query.category);
+    const filter = buildEventFilter(user, query);
     const page   = parseInt(query.page,  10) || 1;
     const limit  = parseInt(query.limit, 10) || 20;
     const skip   = (page - 1) * limit;
@@ -48,21 +72,8 @@ const getAllEvents = async (user, query) => {
 
 /**
  * Create an event.
- * Enforces category restrictions by role.
  */
 const createEvent = async (data, user) => {
-    if (user.role === 'student' && !['Hackathon', 'Workshop'].includes(data.category)) {
-        throw Object.assign(
-            new Error("Students can only create 'Hackathon' or 'Workshop' events."),
-            { statusCode: 400 }
-        );
-    }
-    if (user.role === 'alumni' && !['Webinar', 'Networking'].includes(data.category)) {
-        throw Object.assign(
-            new Error("Alumni can only create 'Webinar' or 'Networking' events."),
-            { statusCode: 400 }
-        );
-    }
 
     const event = await Event.create({
         ...data,
@@ -72,6 +83,25 @@ const createEvent = async (data, user) => {
 
     await invalidatePattern(EVENT_CACHE_PATTERN);
     checkAndAwardBadges(user._id.toString(), 'event_created').catch(() => {});
+    return event;
+};
+
+/**
+ * Update or Cancel an event.
+ */
+const updateEvent = async (eventId, data, user) => {
+    const event = await Event.findById(eventId);
+    if (!event) throw Object.assign(new Error('Event not found'), { statusCode: 404 });
+
+    const isOwner = event.createdBy.toString() === user._id.toString();
+    if (!isOwner && user.role !== 'admin') {
+        throw Object.assign(new Error('Not authorized to edit this event'), { statusCode: 403 });
+    }
+
+    Object.assign(event, data);
+    await event.save();
+    
+    await invalidatePattern(EVENT_CACHE_PATTERN);
     return event;
 };
 
@@ -119,4 +149,4 @@ const reportEvent = async (eventId, userId) => {
     await invalidatePattern(EVENT_CACHE_PATTERN);
 };
 
-module.exports = { getAllEvents, createEvent, rsvpEvent, deleteEvent, reportEvent };
+module.exports = { getAllEvents, createEvent, updateEvent, rsvpEvent, deleteEvent, reportEvent };

@@ -1,12 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
-import { applicationService } from '../../services/jobService';
+import { applicationService, jobService } from '../../services/jobService';
+import { JobModal } from '../../components/ui/JobModal';
 import '../../styles/Student/MyApplications.css';
 
 const MyApplications = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  const [selectedJob, setSelectedJob] = useState(null);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('desc'); // desc = newest first
@@ -33,6 +36,15 @@ const MyApplications = () => {
       setApplications(prev => prev.map(app => app._id === id ? { ...app, isWithdrawn: true } : app));
     } catch (err) {
       alert(err.message || 'Failed to withdraw application.');
+    }
+  };
+
+  const handleViewDetails = async (jobId) => {
+    try {
+      const fullJob = await jobService.getById(jobId);
+      setSelectedJob(fullJob);
+    } catch (err) {
+      alert('Failed to load job details.');
     }
   };
 
@@ -129,19 +141,32 @@ const MyApplications = () => {
                     </span>
                   )}
 
-                  {!app.isWithdrawn && app.stage === 'Applied' && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <button 
-                      className="btn btn-sm btn-ghost" 
-                      style={{ color: 'var(--clr-danger)', padding: '8px 16px' }}
-                      onClick={() => handleWithdraw(app._id)}
+                      className="btn btn-sm btn-outline"
+                      onClick={() => handleViewDetails(app.job._id)}
                     >
-                      Withdraw Application
+                      View Details
                     </button>
-                  )}
+                    {!app.isWithdrawn && app.stage === 'Applied' && (
+                      <button 
+                        className="btn btn-sm btn-ghost" 
+                        style={{ color: 'var(--clr-danger)', padding: '8px 16px' }}
+                        onClick={() => handleWithdraw(app._id)}
+                      >
+                        Withdraw
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
+        )}
+
+        {/* Modal Overlay */}
+        {selectedJob && (
+          <JobModal selectedJob={selectedJob} closeModal={() => setSelectedJob(null)} />
         )}
       </main>
     </div>

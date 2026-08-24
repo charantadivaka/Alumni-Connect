@@ -30,17 +30,30 @@ const AlumniTab = () => {
   const [filters, setFilters]         = useState({ search: '', industry: '', availability: '', skill: '' });
   const [sortOption, setSortOption]   = useState('bestMatch');
 
-  const debouncedFilters = useDebounce(filters, 500);
+  const debouncedSearch       = useDebounce(filters.search, 500);
+  const debouncedIndustry     = filters.industry;
+  const debouncedAvailability = filters.availability;
+  const debouncedSkill        = filters.skill;
 
   const load = useCallback(async () => {
     setLoading(true);
+    const queryFilters = {
+      search: debouncedSearch,
+      industry: debouncedIndustry,
+      availability: debouncedAvailability,
+      skill: debouncedSkill,
+    };
     try {
+      const matchPromise = user.role === 'alumni'
+        ? matchService.getDirectory(queryFilters)
+        : matchService.getMatches(queryFilters);
+
+      // Run independently so a connections error doesn't kill the alumni search
       const [result, conns] = await Promise.all([
-        user.role === 'alumni' 
-          ? matchService.getDirectory(debouncedFilters) 
-          : matchService.getMatches(debouncedFilters),
-        connectionService.getMy(),
+        matchPromise,
+        connectionService.getMy().catch(e => { console.warn('Connections fetch failed:', e.message); return []; }),
       ]);
+
       if (result && typeof result === 'object' && 'alumni' in result) {
         setAlumni(result.alumni || []);
         setCollegeName(result.collegeName || '');
@@ -49,18 +62,19 @@ const AlumniTab = () => {
         setAlumni(Array.isArray(result) ? result : []);
       }
       setConnections(conns);
-    } catch {
+    } catch (err) {
+      console.error('[Network] Failed to load alumni:', err);
       setAlumni([]);
     } finally {
       setLoading(false);
     }
-  }, [debouncedFilters]);
+  }, [debouncedSearch, debouncedIndustry, debouncedAvailability, debouncedSkill, user.role]);
 
   useEffect(() => { load(); }, [load]);
 
-  const maxRating = useMemo(() => {
+  const maxMentorships = useMemo(() => {
     if (alumni.length === 0) return 0;
-    return Math.max(...alumni.map(a => a.rating || 0));
+    return Math.max(...alumni.map(a => a.mentorshipsCount || 0));
   }, [alumni]);
 
   const sortedAlumni = useMemo(() => {
@@ -68,7 +82,7 @@ const AlumniTab = () => {
     switch (sortOption) {
       case 'bestMatch':     sorted.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));      break;
       case 'mostActive':    sorted.sort((a, b) => (b.studentsHelped || 0) - (a.studentsHelped || 0)); break;
-      case 'highestRated':  sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));              break;
+      case 'mostMentored':  sorted.sort((a, b) => (b.mentorshipsCount || 0) - (a.mentorshipsCount || 0)); break;
       case 'recentlyJoined':sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));  break;
       default: break;
     }
@@ -145,7 +159,7 @@ const AlumniTab = () => {
             <select className="form-input" value={sortOption} onChange={e => setSortOption(e.target.value)}>
               <option value="bestMatch">Best Match</option>
               <option value="mostActive">Most Active</option>
-              <option value="highestRated">Highest Rated</option>
+              <option value="mostMentored">Most Mentored</option>
               <option value="recentlyJoined">Recently Joined</option>
             </select>
           </div>
@@ -164,7 +178,7 @@ const AlumniTab = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 'var(--sp-lg)' }}>
           {sortedAlumni.map(a => {
             const exp = a.yearsOfExperience || 0;
-            const isTopMentor = maxRating > 0 && a.rating === maxRating;
+            const isTopMentor = maxMentorships > 0 && a.mentorshipsCount === maxMentorships;
             const avail = getAvailabilityStatus(a.mentorshipAvailability || 'Available');
             const conn = connections.find(c =>
               (c.sender?._id === user._id && c.receiver?._id === a._id) ||
@@ -211,10 +225,6 @@ const AlumniTab = () => {
                     <div style={{ fontSize: '1rem', fontWeight: 700 }}>{a.studentsHelped || 0}</div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--clr-text-faint)', textTransform: 'uppercase' }}>Students</div>
                   </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: 700 }}>{a.rating ? a.rating.toFixed(1) : 'N/A'}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--clr-text-faint)', textTransform: 'uppercase' }}>Rating</div>
-                  </div>
                 </div>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 'var(--sp-md)' }}>
                   <span>{avail.symbol}</span>
@@ -256,6 +266,7 @@ const StudentsTab = () => {
   const [connections, setConnections] = useState([]);
   const [loading, setLoading]         = useState(true);
   const [search, setSearch]           = useState('');
+  const [skillFilter, setSkillFilter] = useState('');
   const [noCollege, setNoCollege]     = useState(false);
   const [collegeName, setCollegeName] = useState('');
 
@@ -299,11 +310,20 @@ const StudentsTab = () => {
   };
 
   const debouncedSearch = useDebounce(search, 300);
+  const debouncedSkill  = useDebounce(skillFilter, 300);
 
   const filtered = students.filter(s => {
-    if (!debouncedSearch) return true;
-    const q = debouncedSearch.toLowerCase();
-    return s.name?.toLowerCase().includes(q) || s.department?.toLowerCase().includes(q);
+    let match = true;
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
+      match = match && (s.name?.toLowerCase().includes(q) || s.department?.toLowerCase().includes(q));
+    }
+    if (debouncedSkill) {
+      const sq = debouncedSkill.toLowerCase();
+      const hasSkill = s.skills && s.skills.some(skill => skill.toLowerCase().includes(sq));
+      match = match && hasSkill;
+    }
+    return match;
   });
 
   if (loading) return <div className="loading-center"><div className="spinner" /></div>;
@@ -327,15 +347,26 @@ const StudentsTab = () => {
 
   return (
     <div>
-      {/* Search */}
-      <div className="card" style={{ marginBottom: 'var(--sp-lg)', display: 'flex', gap: 'var(--sp-md)', alignItems: 'center' }}>
-        <input
-          className="form-input"
-          placeholder="Search by name or department…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ flex: 1 }}
-        />
+      {/* Filters */}
+      <div className="card" style={{ marginBottom: 'var(--sp-lg)', display: 'flex', gap: 'var(--sp-md)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div className="form-group" style={{ flex: '1 1 200px' }}>
+          <label className="form-label">Search</label>
+          <input
+            className="form-input"
+            placeholder="Name or department…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="form-group" style={{ flex: '1 1 140px' }}>
+          <label className="form-label">Skill</label>
+          <input
+            className="form-input"
+            placeholder="e.g. React"
+            value={skillFilter}
+            onChange={e => setSkillFilter(e.target.value)}
+          />
+        </div>
       </div>
 
       {filtered.length === 0 ? (

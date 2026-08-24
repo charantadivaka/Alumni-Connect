@@ -1,66 +1,149 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { eventService } from '../../services/eventService';
 import { bookmarkService } from '../../services/otherServices';
+import { useDebounce } from '../../hooks/useDebounce';
 import '../../styles/Student/Events.css';
+
+const CATEGORIES = ['Hackathon', 'Workshop', 'Webinar', 'Networking', 'Career Fair', 'Seminar', 'Tech Talk', 'Coding Contest', 'Other'];
 
 const StudentEvents = () => {
   const { user } = useAuth();
+  
+  // Data state
   const [events, setEvents] = useState([]);
   const [bookmarks, setBookmarks] = useState(new Set());
+  const [total, setTotal] = useState(0);
+  
+  // UI state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [rsvping, setRsvping] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  
+  // Filters & Pagination
+  const [page, setPage] = useState(1);
   const [filterCategory, setFilterCategory] = useState('');
+  const [timeframe, setTimeframe] = useState(''); // Upcoming, Past
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 400);
+  
+  // Form state
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [form, setForm] = useState({ title: '', description: '', category: 'Hackathon', date: '', location: 'Online', link: '' });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [evs, bks] = await Promise.all([
-          eventService.getAll(),
-          bookmarkService.getAll('Event')
-        ]);
-        setEvents(evs.events || evs || []);
-        setBookmarks(new Set(bks.map(b => b.refId)));
-      } catch (err) {
-        setError(err.message || 'Failed to load events.');
-      } finally {
-        setLoading(false);
+  const fetchEvents = useCallback(async (pageNum = 1, append = false) => {
+    try {
+      if (pageNum === 1) setLoading(true);
+      else setLoadingMore(true);
+
+      const params = { page: pageNum, limit: 20 };
+      if (filterCategory) params.category = filterCategory;
+      if (timeframe) params.timeframe = timeframe;
+      if (debouncedSearch) params.search = debouncedSearch;
+
+      const [evs, bks] = await Promise.all([
+        eventService.getAll(params),
+        pageNum === 1 ? bookmarkService.getAll('Event') : Promise.resolve(null)
+      ]);
+
+      const fetchedEvents = evs.events || evs || [];
+      if (append) {
+        setEvents(prev => [...prev, ...fetchedEvents]);
+      } else {
+        setEvents(fetchedEvents);
       }
-    };
-    fetchData();
-  }, []);
+      
+      if (evs.total !== undefined) setTotal(evs.total);
+      
+      if (bks) {
+        setBookmarks(new Set(bks.map(b => b.refId)));
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to load events.');
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [filterCategory, timeframe, debouncedSearch]);
+
+  useEffect(() => {
+    setPage(1);
+    fetchEvents(1, false);
+  }, [fetchEvents]);
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchEvents(nextPage, true);
+  };
 
   const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleCreate = async (e) => {
+  const openCreateForm = () => {
+    setForm({ title: '', description: '', category: 'Hackathon', date: '', location: 'Online', link: '' });
+    setEditingEvent(null);
+    setShowForm(true);
+  };
+
+  const openEditForm = (ev) => {
+    const d = new Date(ev.date);
+    const tzOffset = d.getTimezoneOffset() * 60000;
+    const localIso = new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+    
+    setForm({
+      title: ev.title, description: ev.description, category: ev.category,
+      date: localIso, location: ev.location, link: ev.link || ''
+    });
+    setEditingEvent(ev._id);
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title || !form.date || !form.description) { alert('Title, Date, and Description are required.'); return; }
     try {
       setCreating(true);
       const payload = { ...form, date: new Date(form.date).toISOString() };
-      const newEvent = await eventService.create(payload);
-      setEvents(prev => [newEvent, ...prev]);
-      setForm({ title: '', description: '', category: 'Hackathon', date: '', location: 'Online', link: '' });
+      
+      if (editingEvent) {
+        const updated = await eventService.update(editingEvent, payload);
+        setEvents(prev => prev.map(ev => ev._id === editingEvent ? { ...ev, ...updated } : ev));
+        alert('Event updated successfully!');
+      } else {
+        const newEvent = await eventService.create(payload);
+        setEvents(prev => [newEvent, ...prev]);
+        setTotal(t => t + 1);
+      }
       setShowForm(false);
     } catch (err) {
-      alert(err.message || 'Failed to create event.');
+      alert(err.message || 'Failed to save event.');
     } finally {
       setCreating(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this event?')) return;
+    if (!window.confirm('Delete this event permanently?')) return;
     try {
       await eventService.remove(id);
       setEvents(prev => prev.filter(ev => ev._id !== id));
+      setTotal(t => Math.max(0, t - 1));
     } catch (err) {
       alert(err.message || 'Failed to delete event.');
+    }
+  };
+
+  const handleCancelEvent = async (id) => {
+    if (!window.confirm('Mark this event as Cancelled? Students will be notified.')) return;
+    try {
+      const updated = await eventService.update(id, { status: 'Cancelled' });
+      setEvents(prev => prev.map(ev => ev._id === id ? { ...ev, status: 'Cancelled' } : ev));
+    } catch (err) {
+      alert(err.message || 'Failed to cancel event.');
     }
   };
 
@@ -91,7 +174,7 @@ const StudentEvents = () => {
         return { ...ev, rsvps };
       }));
     } catch (err) {
-      alert(err.message || 'Failed to RSVP.');
+      alert(err.message || 'Failed to register.');
     } finally {
       setRsvping(null);
     }
@@ -109,36 +192,55 @@ const StudentEvents = () => {
     }
   };
 
-  const CATEGORIES = ['', 'Hackathon', 'Workshop'];
+  const getEventStatus = (ev) => {
+    if (ev.status === 'Cancelled') return { label: 'Cancelled', color: 'var(--clr-danger)' };
+    const now = new Date();
+    const eventStart = new Date(ev.date);
+    const eventEnd = new Date(eventStart.getTime() + 2 * 60 * 60 * 1000); // Assume 2 hour duration
 
-  const displayed = filterCategory
-    ? events.filter(ev => ev.category === filterCategory)
-    : events;
+    if (now > eventEnd) return { label: 'Completed', color: 'var(--clr-text-muted)' };
+    if (now >= eventStart && now <= eventEnd) return { label: 'Live Now', color: 'var(--clr-success)' };
+    return { label: 'Upcoming', color: 'var(--clr-primary)' };
+  };
 
   return (
     <div className="dashboard-layout">
       <Sidebar />
       <main className="dashboard-main fade-in">
-        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 15 }}>
+        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 15 }}>
           <div>
             <h1>Events</h1>
             <p>Upcoming networking, webinars, and career events.</p>
           </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="Search events..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ width: '200px' }}
+            />
             <select className="form-input" style={{ width: 'auto' }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c || 'All Categories'}</option>)}
+              <option value="">All Categories</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <button className="btn btn-primary" onClick={() => setShowForm(v => !v)}>
+            <select className="form-input" style={{ width: 'auto' }} value={timeframe} onChange={e => setTimeframe(e.target.value)}>
+              <option value="">All Time</option>
+              <option value="Upcoming">Upcoming</option>
+              <option value="Past">Past</option>
+            </select>
+            <button className="btn btn-primary" onClick={() => showForm ? setShowForm(false) : openCreateForm()}>
               {showForm ? 'Cancel' : '+ Create Event'}
             </button>
           </div>
         </div>
 
-        {/* Create Event Form */}
+        {/* Create/Edit Event Form */}
         {showForm && (
-          <div className="card" style={{ marginBottom: 24 }}>
-            <h3 style={{ marginBottom: 16 }}>New Event</h3>
-            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+          <div className="card" style={{ marginBottom: 24, border: '1px solid var(--clr-primary-light)' }}>
+            <h3 style={{ marginBottom: 16 }}>{editingEvent ? 'Edit Event' : 'New Event'}</h3>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
               <div className="grid-2" style={{ gap: 15 }}>
                 <div className="form-group">
                   <label className="form-label">Event Title *</label>
@@ -147,8 +249,7 @@ const StudentEvents = () => {
                 <div className="form-group">
                   <label className="form-label">Category</label>
                   <select name="category" className="form-input" value={form.category} onChange={handleChange}>
-                    <option value="Hackathon">Hackathon</option>
-                    <option value="Workshop">Workshop</option>
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
               </div>
@@ -168,11 +269,13 @@ const StudentEvents = () => {
               </div>
               <div className="form-group">
                 <label className="form-label">Description *</label>
-                <textarea name="description" className="form-input" rows={3} required value={form.description} onChange={handleChange} placeholder="Describe the event, hackathon guidelines, agenda..." />
+                <textarea name="description" className="form-input" rows={3} required value={form.description} onChange={handleChange} placeholder="Describe the event, guidelines, agenda..." />
               </div>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={creating}>{creating ? 'Creating...' : 'Create Event'}</button>
+                <button type="submit" className="btn btn-primary" disabled={creating}>
+                  {creating ? 'Saving...' : (editingEvent ? 'Save Changes' : 'Create Event')}
+                </button>
               </div>
             </form>
           </div>
@@ -180,82 +283,120 @@ const StudentEvents = () => {
 
         {error && <div className="card" style={{ color: 'var(--clr-danger)', marginBottom: 20 }}>{error}</div>}
 
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading...</div>
-        ) : displayed.length === 0 ? (
+        {loading && page === 1 ? (
+          <div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading events...</div>
+        ) : events.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-            <span style={{ fontSize: '2rem' }}>📅</span>
-            <h3>No Events</h3>
-            <p className="text-muted">No upcoming events right now. Check back later!</p>
+            <span style={{ fontSize: '2rem' }}>??</span>
+            <h3>No Events Found</h3>
+            <p className="text-muted">Try adjusting your filters or check back later!</p>
           </div>
         ) : (
-          <div className="grid-2">
-            {displayed.map(ev => {
-              const isRsvped = Array.isArray(ev.rsvps) && ev.rsvps.some(id => id === user._id || (id?._id || id) === user._id);
-              const eventDate = new Date(ev.date);
-              const isPast = eventDate < new Date();
-              return (
-                <div key={ev._id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'relative' }}>
-                  <button 
-                    onClick={(e) => handleToggleBookmark(e, ev._id)}
-                    style={{ position: 'absolute', top: 15, right: 45, background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
-                    title={bookmarks.has(ev._id) ? "Remove Bookmark" : "Save Event"}
-                  >
-                    {bookmarks.has(ev._id) ? '🔖' : '🤍'}
-                  </button>
-                  <button 
-                    onClick={(e) => handleReportEvent(e, ev._id)}
-                    style={{ position: 'absolute', top: 15, right: 15, background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--clr-danger)' }}
-                    title="Report Event"
-                  >
-                    🚩
-                  </button>
-                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <h3 style={{ margin: 0, paddingRight: '75px' }}>{ev.title}</h3>
-                  </div>
+          <>
+            <div className="grid-2">
+              {events.map(ev => {
+                const isRsvped = Array.isArray(ev.rsvps) && ev.rsvps.some(id => id === user._id || (id?._id || id) === user._id);
+                const eventDate = new Date(ev.date);
+                const status = getEventStatus(ev);
+                const isCancelled = ev.status === 'Cancelled';
+                const isPast = status.label === 'Completed';
+                const isOwner = ev.createdBy?._id === user._id || ev.createdBy === user._id;
 
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: '0.875rem', color: 'var(--clr-text-muted)', alignItems: 'center' }}>
-                    <span className="badge badge-ghost" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{ev.category}</span>
-                    <span>📅 {eventDate.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                    <span>📍 {ev.location}</span>
-                  </div>
-
-                  <p className="text-sm" style={{ margin: 0, lineHeight: 1.6 }}>
-                    {ev.description?.substring(0, 150)}{ev.description?.length > 150 ? '...' : ''}
-                  </p>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 12, borderTop: '1px solid var(--clr-border)' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <span className="text-sm text-muted">By: {ev.createdBy?.name || 'Alumni'}</span>
-                      <span className="text-sm text-faint">👥 {(ev.rsvps || []).length} attending</span>
+                return (
+                  <div key={ev._id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', opacity: isCancelled ? 0.7 : 1 }}>
+                    <button 
+                      onClick={(e) => handleToggleBookmark(e, ev._id)}
+                      style={{ position: 'absolute', top: 15, right: 45, background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                      title={bookmarks.has(ev._id) ? "Remove Bookmark" : "Save Event"}
+                    >
+                      {bookmarks.has(ev._id) ? '??' : '??'}
+                    </button>
+                    {!isOwner && (
+                      <button 
+                        onClick={(e) => handleReportEvent(e, ev._id)}
+                        style={{ position: 'absolute', top: 15, right: 15, background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--clr-danger)' }}
+                        title="Report Event"
+                      >
+                        ??
+                      </button>
+                    )}
+                    
+                    <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                      <h3 style={{ margin: 0, paddingRight: '75px', textDecoration: isCancelled ? 'line-through' : 'none' }}>{ev.title}</h3>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      {ev.link && (
-                        <a href={ev.link} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">🔗 Link</a>
-                      )}
-                      {ev.createdBy?._id === user._id || ev.createdBy === user._id ? (
-                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--clr-danger)' }} onClick={() => handleDelete(ev._id)}>Delete</button>
-                      ) : (
-                        <>
-                          {!isPast && (
-                            <button
-                              className={`btn btn-sm ${isRsvped ? 'btn-ghost' : 'btn-primary'}`}
-                              style={isRsvped ? { color: 'var(--clr-danger)' } : {}}
-                              onClick={() => handleRsvp(ev._id)}
-                              disabled={rsvping === ev._id}
-                            >
-                              {rsvping === ev._id ? '...' : isRsvped ? 'Cancel RSVP' : 'RSVP'}
-                            </button>
-                          )}
-                          {isPast && <span className="badge badge-ghost">Past Event</span>}
-                        </>
-                      )}
+
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: '0.875rem', color: 'var(--clr-text-muted)', alignItems: 'center' }}>
+                      <span className="badge" style={{ backgroundColor: 'transparent', border: `1px solid ${status.color}`, color: status.color, fontSize: '0.72rem', padding: '2px 8px' }}>
+                        {status.label === 'Live Now' ? '?? ' : status.label === 'Upcoming' ? '?? ' : status.label === 'Completed' ? '? ' : ''}{status.label}
+                      </span>
+                      <span className="badge badge-ghost" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{ev.category}</span>
+                    </div>
+                    
+                    <div style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', display: 'flex', gap: 10 }}>
+                      <span>?? {eventDate.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>?? {ev.location}</span>
+                    </div>
+
+                    <p className="text-sm" style={{ margin: 0, lineHeight: 1.6 }}>
+                      {ev.description?.substring(0, 150)}{ev.description?.length > 150 ? '...' : ''}
+                    </p>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 12, borderTop: '1px solid var(--clr-border)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span className="text-sm text-muted">By: {ev.createdBy?.name || 'Alumni'}</span>
+                        <span className="text-sm text-primary" style={{ fontWeight: 600 }}>
+                          {(ev.rsvps || []).length} students registered
+                        </span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {ev.link && !isCancelled && (
+                          <a href={ev.link} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">?? Link</a>
+                        )}
+                        
+                        {isOwner ? (
+                          <>
+                            {!isCancelled && !isPast && (
+                              <>
+                                <button className="btn btn-ghost btn-sm" onClick={() => openEditForm(ev)}>Edit</button>
+                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--clr-danger)' }} onClick={() => handleCancelEvent(ev._id)}>Cancel Event</button>
+                              </>
+                            )}
+                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--clr-danger)' }} onClick={() => handleDelete(ev._id)}>Delete</button>
+                          </>
+                        ) : (
+                          <>
+                            {!isCancelled && !isPast && (
+                              <button
+                                className={`btn btn-sm ${isRsvped ? 'btn-ghost' : 'btn-primary'}`}
+                                style={isRsvped ? { color: 'var(--clr-danger)' } : {}}
+                                onClick={() => handleRsvp(ev._id)}
+                                disabled={rsvping === ev._id}
+                              >
+                                {rsvping === ev._id ? '...' : isRsvped ? 'Cancel Registration' : 'Register / Attend'}
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+
+            {events.length < total && (
+              <div style={{ textAlign: 'center', marginTop: 30 }}>
+                <button 
+                  className="btn btn-ghost" 
+                  onClick={handleLoadMore} 
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? 'Loading...' : 'Load More Events'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

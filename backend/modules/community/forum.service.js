@@ -23,17 +23,35 @@ setInterval(() => {
     }
 }, 15 * 60 * 1000);
 
+const { escapeRegex } = require('../../shared/utils/escapeRegex');
+
 /** Build filter scoped to user's college (admins see all). */
-const buildThreadFilter = (user, category) => {
+const buildThreadFilter = (user, query) => {
     const filter = {};
-    if (category) filter.category = category;
+    if (query.category) filter.category = query.category;
+
+    if (query.search) {
+        const regex = new RegExp(escapeRegex(query.search), 'i');
+        filter.$or = [
+            { title: regex },
+            { content: regex }
+        ];
+    }
 
     if (user && user.role !== 'admin' && user.college) {
-        filter.$or = [
-            { college: user.college },
-            { college: { $exists: false } },
-            { college: null },
-        ];
+        if (filter.$or) {
+            filter.$and = [
+                { $or: filter.$or },
+                { $or: [{ college: user.college }, { college: { $exists: false } }, { college: null }] }
+            ];
+            delete filter.$or;
+        } else {
+            filter.$or = [
+                { college: user.college },
+                { college: { $exists: false } },
+                { college: null },
+            ];
+        }
     }
     return filter;
 };
@@ -74,16 +92,25 @@ const checkSpam = (userId, content) => {
 
 /** Get paginated threads. */
 const getThreads = async (user, query) => {
-    const filter = buildThreadFilter(user, query.category);
+    const filter = buildThreadFilter(user, query);
     const page   = parseInt(query.page, 10) || 1;
     const limit  = parseInt(query.limit, 10) || 50;
     const skip   = (page - 1) * limit;
+
+    let sortObj = { isPinned: -1, createdAt: -1 };
+    if (query.sort === 'upvoted') {
+        sortObj = { isPinned: -1, upvoteCount: -1, createdAt: -1 };
+    } else if (query.sort === 'discussed') {
+        sortObj = { isPinned: -1, replyCount: -1, createdAt: -1 };
+    } else if (query.sort === 'unanswered') {
+        filter.replyCount = { $eq: 0 };
+    }
 
     const [total, threads] = await Promise.all([
         Forum.countDocuments(filter),
         Forum.find(filter)
             .populate('author', 'name profilePicture role company')
-            .sort({ isPinned: -1, createdAt: -1 })
+            .sort(sortObj)
             .skip(skip)
             .limit(limit),
     ]);
@@ -122,6 +149,7 @@ const addReply = async (threadId, content, user) => {
     if (!thread) throw Object.assign(new Error('Thread not found'), { statusCode: 404 });
 
     thread.replies.push({ author: user._id, content });
+    thread.replyCount = thread.replies.length;
     await thread.save();
     
     // Populate the newly added reply author
@@ -141,7 +169,7 @@ const upvoteThread = async (threadId, userId) => {
     } else {
         thread.upvotes.splice(idx, 1);
     }
-
+    thread.upvoteCount = thread.upvotes.length;
     await thread.save();
     return thread.upvotes.length;
 };
@@ -158,4 +186,104 @@ const deleteThread = async (threadId, user) => {
     await thread.deleteOne();
 };
 
-module.exports = { getThreads, getThreadById, createThread, addReply, upvoteThread, deleteThread };
+const editThread = async (threadId, data, user) => {
+    const thread = await Forum.findById(threadId);
+    if (!thread) throw Object.assign(new Error('Thread not found'), { statusCode: 404 });
+    if (thread.author.toString() !== user._id.toString() && user.role !== 'admin') {
+        throw Object.assign(new Error('Not authorized'), { statusCode: 403 });
+    }
+    if (data.title) thread.title = data.title;
+    if (data.content) thread.content = data.content;
+    if (data.category) thread.category = data.category;
+    await thread.save();
+    return thread;
+};
+
+const editReply = async (threadId, replyId, content, user) => {
+    const thread = await Forum.findById(threadId);
+    if (!thread) throw Object.assign(new Error('Thread not found'), { statusCode: 404 });
+    
+    const reply = thread.replies.id(replyId);
+    if (!reply) throw Object.assign(new Error('Reply not found'), { statusCode: 404 });
+    if (reply.author.toString() !== user._id.toString() && user.role !== 'admin') {
+        throw Object.assign(new Error('Not authorized'), { statusCode: 403 });
+    }
+    
+    reply.content = content;
+    await thread.save();
+    await thread.populate('replies.author', 'name profilePicture role');
+    return thread.replies.id(replyId);
+};
+
+const deleteReply = async (threadId, replyId, user) => {
+    const thread = await Forum.findById(threadId);
+    if (!thread) throw Object.assign(new Error('Thread not found'), { statusCode: 404 });
+    
+    const reply = thread.replies.id(replyId);
+    if (!reply) throw Object.assign(new Error('Reply not found'), { statusCode: 404 });
+    if (reply.author.toString() !== user._id.toString() && thread.author.toString() !== user._id.toString() && user.role !== 'admin') {
+        throw Object.assign(new Error('Not authorized'), { statusCode: 403 });
+    }
+    
+    reply.deleteOne();
+    thread.replyCount = thread.replies.length;
+    await thread.save();
+};
+
+const acceptReply = async (threadId, replyId, user) => {
+    const thread = await Forum.findById(threadId);
+    if (!thread) throw Object.assign(new Error('Thread not found'), { statusCode: 404 });
+    if (thread.author.toString() !== user._id.toString()) {
+        throw Object.assign(new Error('Only the author can accept an answer'), { statusCode: 403 });
+    }
+    
+    const reply = thread.replies.id(replyId);
+    if (!reply) throw Object.assign(new Error('Reply not found'), { statusCode: 404 });
+    
+    // Toggle accept status
+    const newStatus = !reply.isAccepted;
+    
+    // Un-accept all others
+    if (newStatus) {
+        thread.replies.forEach(r => r.isAccepted = false);
+    }
+    
+    reply.isAccepted = newStatus;
+    await thread.save();
+    return newStatus;
+};
+
+const toggleFollow = async (threadId, userId) => {
+    const thread = await Forum.findById(threadId);
+    if (!thread) throw Object.assign(new Error('Thread not found'), { statusCode: 404 });
+    
+    const idx = thread.followers.indexOf(userId);
+    let isFollowing = false;
+    if (idx === -1) {
+        thread.followers.push(userId);
+        isFollowing = true;
+    } else {
+        thread.followers.splice(idx, 1);
+    }
+    await thread.save();
+    return { isFollowing, count: thread.followers.length };
+};
+
+const reportContent = async (threadId, replyId, userId) => {
+    const thread = await Forum.findById(threadId);
+    if (!thread) throw Object.assign(new Error('Thread not found'), { statusCode: 404 });
+    
+    if (replyId) {
+        const reply = thread.replies.id(replyId);
+        if (!reply) throw Object.assign(new Error('Reply not found'), { statusCode: 404 });
+        if (!reply.reports.includes(userId)) reply.reports.push(userId);
+    } else {
+        if (!thread.reports.includes(userId)) thread.reports.push(userId);
+    }
+    await thread.save();
+};
+
+module.exports = { 
+    getThreads, getThreadById, createThread, addReply, upvoteThread, deleteThread,
+    editThread, editReply, deleteReply, acceptReply, toggleFollow, reportContent
+};

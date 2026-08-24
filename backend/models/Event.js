@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const eventSchema = new mongoose.Schema({
     title:       { type: String, required: true, trim: true },
     description: { type: String, required: true },
-    category:    { type: String, enum: ['Webinar', 'Career Fair', 'Networking', 'Workshop', 'Hackathon', 'Other'], default: 'Other' },
+    category:    { type: String, enum: ['Webinar', 'Career Fair', 'Networking', 'Workshop', 'Hackathon', 'Seminar', 'Tech Talk', 'Coding Contest', 'Other'], default: 'Other' },
     date:        { type: Date, required: true },
     location:    { type: String, default: 'Online' },
     link:        { type: String, default: '' },
@@ -12,6 +12,7 @@ const eventSchema = new mongoose.Schema({
     college:     { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
     rsvps:       [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     reports:     [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    status:      { type: String, enum: ['Scheduled', 'Cancelled'], default: 'Scheduled' },
     isActive:    { type: Boolean, default: true },
 }, { timestamps: true });
 

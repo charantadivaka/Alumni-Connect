@@ -28,7 +28,7 @@ const SectionCard = ({ title, icon, color, children, linkTo, linkLabel }) => (
 
 /* ── Item row ────────────────────────────────────────────────────────── */
 const ItemRow = ({ primary, secondary, badge, badgeClass = 'badge-primary', onClick }) => (
-  <div className="item-row" onClick={onClick} style={onClick ? { cursor: 'pointer', transition: 'background 0.2s', '&:hover': { background: '#f8fafc' } } : {}}>
+  <div className={`item-row ${onClick ? 'item-row-clickable' : ''}`} onClick={onClick}>
     <div className="item-row-info">
       <div className="item-row-primary">{primary}</div>
       {secondary && <div className="item-row-secondary">{secondary}</div>}

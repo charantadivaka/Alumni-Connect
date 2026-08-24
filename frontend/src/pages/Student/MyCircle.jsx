@@ -39,11 +39,10 @@ const PersonCard = ({ person, connectionId, onRemove, role }) => {
           <div style={{ fontWeight: 700, fontSize: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{person?.name || 'Unknown'}</div>
           {role === 'alumni' ? (
             <>
-              <div style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
-                {person?.designation}{person?.company ? ` @ ${person.company}` : ''}
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-faint)' }}>
-                {person?.department}{person?.graduationYear ? ` · Class of ${person.graduationYear}` : ''}
+              <div style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)' }}>{person?.designation} @ {person?.company}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-faint)' }}>{person?.department} · {person?.graduationYear}</div>
+              <div style={{ fontSize: '0.75rem', marginTop: 4, fontWeight: 600, color: 'var(--clr-primary)' }}>
+                {(person?.yearsOfExperience || 0) > 0 ? `${person.yearsOfExperience} Years Experience` : 'Entry Level'}
               </div>
             </>
           ) : (
@@ -101,8 +100,13 @@ const MyCircle = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('alumni');
   const [pendingIncoming, setPendingIncoming] = useState([]);
+  
+  const [searchAlumni, setSearchAlumni] = useState('');
+  const [searchStudents, setSearchStudents] = useState('');
+  const [sortOrder, setSortOrder] = useState('recent');
 
   useEffect(() => {
+    if (!user?._id) return;
     const fetchConnections = async () => {
       try {
         const data = await connectionService.getMy();
@@ -115,7 +119,7 @@ const MyCircle = () => {
       }
     };
     fetchConnections();
-  }, []);
+  }, [user?._id]);
 
   const handleRemove = (connId) => {
     setConnections(prev => prev.filter(c => c._id !== connId));
@@ -148,6 +152,31 @@ const MyCircle = () => {
   ];
 
   const activeList = activeTab === 'alumni' ? alumniConns : studentConns;
+
+  const sortedList = [...activeList].sort((a, b) => {
+    const timeA = new Date(a.createdAt || 0).getTime();
+    const timeB = new Date(b.createdAt || 0).getTime();
+    return sortOrder === 'recent' ? timeB - timeA : timeA - timeB;
+  });
+
+  const filteredList = sortedList.filter(conn => {
+    const other = getOther(conn);
+    if (activeTab === 'alumni') {
+      if (!searchAlumni) return true;
+      const q = searchAlumni.toLowerCase();
+      const matchName = other?.name?.toLowerCase().includes(q);
+      const matchCompany = other?.company?.toLowerCase().includes(q);
+      const matchRole = other?.designation?.toLowerCase().includes(q);
+      const matchSkill = other?.skills?.some(s => s.toLowerCase().includes(q));
+      return matchName || matchCompany || matchRole || matchSkill;
+    } else {
+      if (!searchStudents) return true;
+      const q = searchStudents.toLowerCase();
+      const matchName = other?.name?.toLowerCase().includes(q);
+      const matchSkill = other?.skills?.some(s => s.toLowerCase().includes(q));
+      return matchName || matchSkill;
+    }
+  });
 
   return (
     <div className="dashboard-layout">
@@ -215,6 +244,38 @@ const MyCircle = () => {
           ))}
         </div>
 
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: 'var(--sp-md)', marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+          {activeTab === 'alumni' ? (
+            <input
+              type="text"
+              className="form-input"
+              style={{ flex: 1, minWidth: 200 }}
+              placeholder="Search by name, company, role, or skills..."
+              value={searchAlumni}
+              onChange={e => setSearchAlumni(e.target.value)}
+            />
+          ) : (
+            <input
+              type="text"
+              className="form-input"
+              style={{ flex: 1, minWidth: 200 }}
+              placeholder="Search by name or skills..."
+              value={searchStudents}
+              onChange={e => setSearchStudents(e.target.value)}
+            />
+          )}
+          <select
+            className="form-input"
+            style={{ width: 180 }}
+            value={sortOrder}
+            onChange={e => setSortOrder(e.target.value)}
+          >
+            <option value="recent">Recent Connections</option>
+            <option value="older">Older Connections</option>
+          </select>
+        </div>
+
         {loading ? (
           <div className="loading-center"><div className="spinner" /></div>
         ) : activeList.length === 0 ? (
@@ -224,9 +285,15 @@ const MyCircle = () => {
             <p>Go to <strong>Network</strong> to send connection requests to {activeTab === 'alumni' ? 'alumni' : 'students'} from your college.</p>
             <Link to="/student/network" className="btn btn-primary" style={{ marginTop: 16 }}>Explore Network →</Link>
           </div>
+        ) : filteredList.length === 0 ? (
+          <div className="empty-state card">
+            <div className="empty-icon">{activeTab === 'alumni' ? '🎓' : '🎒'}</div>
+            <h3>No {activeTab === 'alumni' ? 'alumni' : 'student'} connections match your search</h3>
+            <p>Try adjusting your search query.</p>
+          </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--sp-lg)' }}>
-            {activeList.map(conn => {
+            {filteredList.map(conn => {
               const other = getOther(conn);
               return (
                 <PersonCard

@@ -21,6 +21,16 @@ const createEvent = async (req, res, next) => {
     }
 };
 
+const updateEvent = async (req, res, next) => {
+    try {
+        const event = await eventService.updateEvent(req.params.id, req.body, req.user);
+        sendSuccess(res, event, 'Event updated successfully');
+    } catch (err) {
+        next(err);
+    }
+};
+
+
 const rsvpEvent = async (req, res, next) => {
     try {
         const { rsvped, count } = await eventService.rsvpEvent(req.params.id, req.user._id);
@@ -48,4 +58,4 @@ const reportEvent = async (req, res, next) => {
     }
 };
 
-module.exports = { getEvents, createEvent, rsvpEvent, deleteEvent, reportEvent };
+module.exports = { getEvents, createEvent, updateEvent, rsvpEvent, deleteEvent, reportEvent };

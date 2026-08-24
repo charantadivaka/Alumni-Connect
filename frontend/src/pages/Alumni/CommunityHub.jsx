@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sidebar } from '../../components/layout/Sidebar';
 import Events from './Events';
 import Forum from '../Student/Forum'; // Reusing the shared generic Forum
-import Stories from './Stories';
+import Stories from '../Student/Stories'; // Reusing the shared generic Stories
 import '../../styles/Alumni/CommunityHub.css';
 
 const SECTIONS = [
@@ -27,7 +28,17 @@ const InnerSidebar = ({ active, onChange }) => (
 );
 
 const AlumniCommunityHub = () => {
+  const location = useLocation();
   const [active, setActive] = useState('events');
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && SECTIONS.some(s => s.key === tab)) {
+      setActive(tab);
+    }
+  }, [location.search]);
+
   const ActiveComponent = SECTIONS.find(s => s.key === active)?.Component || Events;
 
   return (

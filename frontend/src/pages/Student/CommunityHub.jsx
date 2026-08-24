@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sidebar } from '../../components/layout/Sidebar';
 import StudentEvents from './Events';
 import StudentForum from './Forum';
@@ -27,7 +28,17 @@ const InnerSidebar = ({ active, onChange }) => (
 );
 
 const CommunityHub = () => {
+  const location = useLocation();
   const [active, setActive] = useState('events');
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && SECTIONS.some(s => s.key === tab)) {
+      setActive(tab);
+    }
+  }, [location.search]);
+
   const ActiveComponent = SECTIONS.find(s => s.key === active)?.Component || StudentEvents;
 
   return (

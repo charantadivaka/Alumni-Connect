@@ -6,7 +6,7 @@ import { VideoCallProvider } from './context/VideoCallContext';
 import VideoCallModal from './components/ui/VideoCallModal';
 
 // Auth guards
-import { ProtectedRoute, RoleGuard } from './components/auth/ProtectedRoute';
+import { RoleGuard } from './components/auth/ProtectedRoute';
 
 // Public pages
 const Landing         = lazy(() => import('./pages/Home/Landing'));

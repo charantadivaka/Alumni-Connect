@@ -22,11 +22,7 @@ const MentorshipSessions = () => {
   const [form, setForm] = useState({ alumniId: '', topic: '', goals: '' });
   const [requesting, setRequesting] = useState(false);
 
-  // Feedback modal
-  const [feedbackSession, setFeedbackSession] = useState(null);
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
-  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -58,23 +54,7 @@ const MentorshipSessions = () => {
     }
   };
 
-  const handleFeedbackSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setSubmittingFeedback(true);
-      await mentorshipService.feedback(feedbackSession._id, { rating, comment });
-      setSessions(prev => prev.map(s =>
-        s._id === feedbackSession._id ? { ...s, studentFeedback: { rating, comment } } : s
-      ));
-      setFeedbackSession(null);
-      setRating(5);
-      setComment('');
-    } catch (err) {
-      alert(err.message || 'Failed to submit feedback.');
-    } finally {
-      setSubmittingFeedback(false);
-    }
-  };
+
 
   const activeSessions = sessions.filter(s => !['Completed', 'Cancelled', 'Rejected'].includes(s.status));
   const pastSessions   = sessions.filter(s =>  ['Completed', 'Cancelled', 'Rejected'].includes(s.status));
@@ -180,63 +160,11 @@ const MentorshipSessions = () => {
                   </div>
                 )}
 
-                {session.status === 'Completed' && !session.studentFeedback?.rating && (
-                  <button className="btn btn-primary btn-sm" onClick={() => setFeedbackSession(session)}>
-                    ⭐ Leave Feedback
-                  </button>
-                )}
-
-                {session.studentFeedback?.rating && (
-                  <p className="text-sm" style={{ color: 'var(--clr-success)' }}>
-                    ✓ Feedback given: {'⭐'.repeat(session.studentFeedback.rating)} — {session.studentFeedback.comment}
-                  </p>
-                )}
-
                 <p className="text-sm text-faint" style={{ marginTop: 'auto' }}>
                   Requested: {new Date(session.createdAt).toLocaleDateString()}
                 </p>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Feedback Modal */}
-        {feedbackSession && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
-            display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 20
-          }}>
-            <div className="card" style={{ width: '100%', maxWidth: 480, padding: 30, position: 'relative' }}>
-              <button onClick={() => setFeedbackSession(null)}
-                style={{ position: 'absolute', top: 15, right: 15, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--clr-text-muted)' }}>
-                ✕
-              </button>
-              <h2 style={{ marginBottom: 5 }}>Leave Feedback</h2>
-              <p className="text-muted" style={{ marginBottom: 20 }}>For: {feedbackSession.topic}</p>
-              <form onSubmit={handleFeedbackSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-                <div className="form-group">
-                  <label className="form-label">Rating</label>
-                  <select className="form-input" value={rating} onChange={e => setRating(Number(e.target.value))}>
-                    <option value={5}>⭐⭐⭐⭐⭐ Excellent</option>
-                    <option value={4}>⭐⭐⭐⭐ Good</option>
-                    <option value={3}>⭐⭐⭐ Average</option>
-                    <option value={2}>⭐⭐ Below Average</option>
-                    <option value={1}>⭐ Poor</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Comment</label>
-                  <textarea className="form-input" rows={3} value={comment} onChange={e => setComment(e.target.value)} placeholder="How was the session?" />
-                </div>
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-ghost" onClick={() => setFeedbackSession(null)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary" disabled={submittingFeedback}>
-                    {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
-                  </button>
-                </div>
-              </form>
-            </div>
           </div>
         )}
       </main>
