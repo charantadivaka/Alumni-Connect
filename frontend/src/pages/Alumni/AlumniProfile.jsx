@@ -300,6 +300,11 @@ const AlumniProfile = () => {
                 <div style={{ fontSize: '0.82rem', color: 'var(--clr-text-muted)', marginBottom: 14 }}>
                   Setting your college links you to your institution's students. They will be able to find you in their alumni list.
                 </div>
+                {profile?.college && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--clr-primary)', marginBottom: 14, fontWeight: 600, background: 'var(--clr-primary-glow)', padding: '6px 12px', borderRadius: 6, display: 'inline-block' }}>
+                    🔒 College is locked. Contact admin to change your registered college.
+                  </div>
+                )}
 
                 {/* College dropdown */}
                 <div className="form-group" style={{ marginBottom: 12 }}>
@@ -307,7 +312,7 @@ const AlumniProfile = () => {
                   {colleges.length === 0 ? (
                     <input className="form-input" value="No colleges added by admin yet" disabled style={{ opacity: 0.6 }} />
                   ) : (
-                    <select className="form-input" value={form.college} onChange={handleCollegeChange}>
+                    <select className="form-input" value={form.college} onChange={handleCollegeChange} disabled={!!profile?.college}>
                       <option value="">— Select your college —</option>
                       {colleges.map(c => (
                         <option key={c._id} value={c._id}>{c.name}</option>
@@ -333,7 +338,8 @@ const AlumniProfile = () => {
                     placeholder={selectedCollege ? selectedCollege.exampleFormat : 'e.g. S20190010042'}
                     value={form.collegeRollNumber}
                     onChange={handleChange}
-                    style={{ border: rollBorder, transition: 'border-color 0.2s' }}
+                    disabled={!!profile?.college}
+                    style={{ border: rollBorder, transition: 'border-color 0.2s', opacity: profile?.college ? 0.7 : 1 }}
                   />
                   {rollValidation === true && (
                     <div style={{ fontSize: '0.8rem', color: 'var(--clr-success)', marginTop: 4, fontWeight: 600 }}>✅ Roll number format is valid</div>

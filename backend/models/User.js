@@ -62,6 +62,12 @@ const userSchema = new mongoose.Schema({
         lng: { type: Number, default: null },
     },
     badges: [badgeSchema],
+    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    reports: [{
+        reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        reason: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now }
+    }],
 }, { timestamps: true });
 
 // Hash password before save

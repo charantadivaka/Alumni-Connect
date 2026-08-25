@@ -16,6 +16,7 @@ const InterviewRequests = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
+  const [searchQuery, setSearchQuery] = useState('');
   const { startCall } = useVideoCall();
 
   // Feedback modal
@@ -94,7 +95,15 @@ const InterviewRequests = () => {
   const past      = interviews.filter(i => ['Completed', 'Rejected'].includes(i.status));
 
   const tabMap = { pending, accepted, past };
-  const displayed = tabMap[activeTab] || [];
+  const rawDisplayed = tabMap[activeTab] || [];
+
+  const displayed = rawDisplayed.filter(i => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const topicMatch = i.topic?.toLowerCase().includes(q);
+    const studentMatch = i.student?.name?.toLowerCase().includes(q);
+    return topicMatch || studentMatch;
+  });
 
   return (
     <div className="dashboard-layout">
@@ -106,6 +115,17 @@ const InterviewRequests = () => {
         </div>
 
         {error && <div className="card" style={{ color: 'var(--clr-danger)', marginBottom: 20 }}>{error}</div>}
+
+        <div style={{ marginBottom: 20 }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Search by topic or student name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: '100%', maxWidth: '400px' }}
+          />
+        </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid var(--clr-border)', paddingBottom: 12, flexWrap: 'wrap' }}>

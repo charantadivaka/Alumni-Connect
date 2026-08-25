@@ -9,6 +9,7 @@ const ManageApplications = () => {
   const [error, setError] = useState('');
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All'); // 'All' or specific stage
   const [sortOrder, setSortOrder] = useState('desc'); // desc = newest first
   
   // Selected Application for viewing details
@@ -61,6 +62,11 @@ const ManageApplications = () => {
       });
     }
 
+    // Filter by Status (Stage)
+    if (statusFilter !== 'All') {
+      result = result.filter(app => app.stage === statusFilter);
+    }
+
     // Sort by Date
     result.sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
@@ -95,6 +101,18 @@ const ManageApplications = () => {
               onChange={e => setSearchQuery(e.target.value)}
               style={{ width: '100%' }}
             />
+          </div>
+          <div style={{ minWidth: '150px' }}>
+            <label className="form-label text-sm text-muted" style={{ marginBottom: '4px' }}>Filter by Status</label>
+            <select 
+              className="form-input" 
+              value={statusFilter} 
+              onChange={e => setStatusFilter(e.target.value)}
+              style={{ width: '100%' }}
+            >
+              <option value="All">All Statuses</option>
+              {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
           </div>
           <div style={{ minWidth: '150px' }}>
             <label className="form-label text-sm text-muted" style={{ marginBottom: '4px' }}>Sort by Date</label>
@@ -153,9 +171,16 @@ const ManageApplications = () => {
                     {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
 
-                  <button className="btn btn-sm btn-ghost" onClick={() => setSelectedApp(app)}>
-                    View Full Details
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {app.applicant && app.applicant._id && (
+                      <a href={`/alumni/student/${app.applicant._id}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-ghost" title="View Student Profile">
+                        View Profile
+                      </a>
+                    )}
+                    <button className="btn btn-sm btn-ghost" onClick={() => setSelectedApp(app)}>
+                      View Full Details
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -185,10 +210,19 @@ const ManageApplications = () => {
                 ✕
               </button>
 
-              <h2 style={{ marginBottom: '5px', color: 'var(--clr-primary)' }}>Application Details</h2>
-              <p className="text-muted" style={{ marginBottom: '20px' }}>
-                Applied for: <strong>{selectedApp.job?.title} ({selectedApp.job?.company})</strong>
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <h2 style={{ marginBottom: '5px', color: 'var(--clr-primary)' }}>Application Details</h2>
+                  <p className="text-muted" style={{ marginBottom: '20px' }}>
+                    Applied for: <strong>{selectedApp.job?.title} ({selectedApp.job?.company})</strong>
+                  </p>
+                </div>
+                {selectedApp.applicant && selectedApp.applicant._id && (
+                  <a href={`/alumni/student/${selectedApp.applicant._id}`} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    👤 View Student Profile
+                  </a>
+                )}
+              </div>
 
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
                 <tbody>

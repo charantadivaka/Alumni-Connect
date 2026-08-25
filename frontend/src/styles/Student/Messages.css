@@ -1,1 +1,34 @@
 /* Styles for Messages */
+
+.msg-row:hover .msg-actions {
+  opacity: 1 !important;
+}
+
+.msg-actions button {
+  transform: scale(0.9);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.msg-actions button:hover {
+  transform: scale(1.1);
+  background: var(--clr-bg-card) !important;
+}
+
+/* Custom Scrollbar for messages */
+.dashboard-main ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dashboard-main ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-main ::-webkit-scrollbar-thumb {
+  background: var(--clr-border);
+  border-radius: 10px;
+}
+
+.dashboard-main ::-webkit-scrollbar-thumb:hover {
+  background: var(--clr-text-muted);
+}

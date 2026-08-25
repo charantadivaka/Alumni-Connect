@@ -136,7 +136,7 @@ const Stories = () => {
       <main className="dashboard-main fade-in">
         <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 15 }}>
           <div>
-            <h1>Alumni Success Stories</h1>
+            <h1>Success Stories</h1>
             <p>Read inspiring journeys and career transitions.</p>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>

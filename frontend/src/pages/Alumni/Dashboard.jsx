@@ -174,8 +174,8 @@ const Dashboard = () => {
                           <h3 className="card-item-title">{job.title}</h3>
                           <p className="text-muted card-item-sub">{job.company} • {job.location}</p>
                         </div>
-                        <span className={`badge ${job.isActive ? 'badge-success' : 'badge-danger'}`}>
-                          {job.isActive ? 'Active' : 'Closed'}
+                        <span className={`badge badge-ghost`}>
+                          {job.status || 'Active'}
                         </span>
                       </div>
                       <div className="badge-row">

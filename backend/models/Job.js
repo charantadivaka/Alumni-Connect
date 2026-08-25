@@ -21,7 +21,7 @@ const jobSchema = new mongoose.Schema({
     skills:             { type: [String], default: [] },
     salary:             { type: String, default: '' },
     applicationLink:    { type: String, default: '' },
-    isActive:           { type: Boolean, default: true },
+    status:             { type: String, enum: ['Active', 'Paused', 'Closed', 'Scheduled'], default: 'Active' },
     deadline:           { type: Date },
     postedBy:           { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     reports:            [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
@@ -33,7 +33,7 @@ const jobSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Indexes for performance
-jobSchema.index({ isActive: 1, createdAt: -1 });
+jobSchema.index({ status: 1, createdAt: -1 });
 jobSchema.index({ reports: 1 });           // Finds jobs with any reports (replaces ineffective 'reports.0' index)
 
 // ── Elasticsearch Sync Hooks ─────────────────────────────────────────
@@ -47,7 +47,7 @@ jobSchema.post('save', async function (doc) {
         location: doc.location,
         jobType: doc.jobType,
         skills: doc.skills,
-        isActive: doc.isActive,
+        status: doc.status,
     });
 });
 

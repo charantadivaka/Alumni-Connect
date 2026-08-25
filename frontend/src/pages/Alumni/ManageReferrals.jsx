@@ -12,6 +12,7 @@ const ManageReferrals = () => {
   const [respondTarget, setRespondTarget] = useState(null);
   const [respondForm, setRespondForm] = useState({ status: 'Submitted', alumniNote: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchReferrals = async () => {
@@ -42,8 +43,19 @@ const ManageReferrals = () => {
     }
   };
 
-  const pendingRefs  = referrals.filter(r => r.status === 'Pending');
-  const resolvedRefs = referrals.filter(r => r.status !== 'Pending');
+  const pendingRefs  = referrals.filter(r => {
+    if (r.status !== 'Pending') return false;
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return r.jobTitle?.toLowerCase().includes(q) || r.company?.toLowerCase().includes(q) || r.student?.name?.toLowerCase().includes(q);
+  });
+  
+  const resolvedRefs = referrals.filter(r => {
+    if (r.status === 'Pending') return false;
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return r.jobTitle?.toLowerCase().includes(q) || r.company?.toLowerCase().includes(q) || r.student?.name?.toLowerCase().includes(q);
+  });
 
   return (
     <div className="dashboard-layout">
@@ -55,6 +67,17 @@ const ManageReferrals = () => {
         </div>
 
         {error && <div className="card" style={{ color: 'var(--clr-danger)', marginBottom: 20 }}>{error}</div>}
+
+        <div style={{ marginBottom: 20 }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Search by job title, company, or student name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: '100%', maxWidth: '400px' }}
+          />
+        </div>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading...</div>

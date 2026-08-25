@@ -57,10 +57,20 @@ const getMyJobs = async (req, res, next) => {
     }
 };
 
-const toggleJobStatus = async (req, res, next) => {
+const updateJobStatus = async (req, res, next) => {
     try {
-        const job = await jobService.toggleJobStatus(req.params.id, req.user._id);
-        sendSuccess(res, job, `Job is now ${job.isActive ? 'Active' : 'Inactive'}`);
+        const { status } = req.body;
+        const job = await jobService.updateJobStatus(req.params.id, req.user._id, status);
+        sendSuccess(res, job, `Job status updated to ${job.status}`);
+    } catch (err) {
+        next(err);
+    }
+};
+
+const duplicateJob = async (req, res, next) => {
+    try {
+        const job = await jobService.duplicateJob(req.params.id, req.user._id);
+        sendSuccess(res, job, 'Job duplicated successfully', 201);
     } catch (err) {
         next(err);
     }
@@ -77,5 +87,5 @@ const reportJob = async (req, res, next) => {
 
 module.exports = {
     getJobs, getJobById, createJob, updateJob,
-    deleteJob, getMyJobs, toggleJobStatus, reportJob
+    deleteJob, getMyJobs, updateJobStatus, duplicateJob, reportJob
 };

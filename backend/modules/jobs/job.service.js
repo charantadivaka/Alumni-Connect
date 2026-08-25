@@ -8,6 +8,7 @@
  */
 
 const Job = require('../../models/Job');
+const JobApplication = require('../../models/JobApplication');
 const { invalidatePattern } = require('../../config/redis');
 const { escapeRegex }       = require('../../shared/utils/escapeRegex');
 const { esClient }          = require('../../config/elasticsearch');
@@ -18,7 +19,7 @@ const JOB_CACHE_PATTERN = '__express__:*:/api/jobs*';
  * Build a Mongoose filter object from query parameters.
  */
 const buildJobFilter = ({ search, type, location, skill }) => {
-    const filter = { isActive: true };
+    const filter = { status: 'Active' };
 
     if (search) {
         const terms = search.trim().split(/\s+/).filter(t => t).map(escapeRegex);
@@ -60,7 +61,7 @@ const getAllJobs = async (query) => {
                     query: {
                         bool: {
                             must: [
-                                { match: { isActive: true } },
+                                { match: { status: 'Active' } },
                                 {
                                     multi_match: {
                                         query: query.search,
@@ -178,13 +179,52 @@ const deleteJob = async (jobId, user) => {
     await invalidatePattern(JOB_CACHE_PATTERN);
 };
 
-/** Get jobs posted by the current user. */
+/** Get jobs posted by the current user with application counts. */
 const getMyJobs = async (userId) => {
-    return Job.find({ postedBy: userId }).sort({ createdAt: -1 });
+    const myJobs = await Job.find({ postedBy: userId }).lean().sort({ createdAt: -1 });
+    const jobIds = myJobs.map(j => j._id);
+    
+    const counts = await JobApplication.aggregate([
+        { $match: { job: { $in: jobIds } } },
+        { $group: { _id: '$job', count: { $sum: 1 } } }
+    ]);
+    
+    const countMap = counts.reduce((acc, curr) => ({ ...acc, [curr._id]: curr.count }), {});
+    
+    return myJobs.map(j => ({
+        ...j,
+        applicationCount: countMap[j._id] || 0
+    }));
 };
 
-/** Toggle a job's active/inactive status. */
-const toggleJobStatus = async (jobId, userId) => {
+/** Duplicate an existing job. */
+const duplicateJob = async (jobId, userId) => {
+    const original = await Job.findById(jobId).lean();
+    if (!original) throw Object.assign(new Error('Job not found'), { statusCode: 404 });
+    if (original.postedBy.toString() !== userId.toString()) {
+        throw Object.assign(new Error('Not authorized'), { statusCode: 403 });
+    }
+
+    delete original._id;
+    delete original.createdAt;
+    delete original.updatedAt;
+    delete original.__v;
+    
+    original.title = `${original.title} (Copy)`;
+    original.status = 'Paused'; // Default duplicated jobs to Paused so they aren't immediately live
+
+    const duplicated = await Job.create(original);
+    await invalidatePattern(JOB_CACHE_PATTERN);
+    return duplicated;
+};
+
+/** Update a job's status. */
+const updateJobStatus = async (jobId, userId, newStatus) => {
+    const validStatuses = ['Active', 'Paused', 'Closed', 'Scheduled'];
+    if (!validStatuses.includes(newStatus)) {
+        throw Object.assign(new Error('Invalid status'), { statusCode: 400 });
+    }
+
     const job = await Job.findById(jobId);
     if (!job) throw Object.assign(new Error('Job not found'), { statusCode: 404 });
 
@@ -192,7 +232,7 @@ const toggleJobStatus = async (jobId, userId) => {
         throw Object.assign(new Error('Not authorized'), { statusCode: 403 });
     }
 
-    job.isActive = !job.isActive;
+    job.status = newStatus;
     await job.save();
     await invalidatePattern(JOB_CACHE_PATTERN);
     return job;
@@ -214,5 +254,5 @@ const reportJob = async (jobId, userId) => {
 
 module.exports = {
     getAllJobs, getJobById, createJob, updateJob,
-    deleteJob, getMyJobs, toggleJobStatus, reportJob,
+    deleteJob, getMyJobs, updateJobStatus, duplicateJob, reportJob,
 };

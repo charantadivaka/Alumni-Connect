@@ -52,5 +52,6 @@ export const api = {
   get:    (path, signal)       => request('GET',    path, null, signal),
   post:   (path, body, signal) => request('POST',   path, body, signal),
   put:    (path, body, signal) => request('PUT',    path, body, signal),
+  patch:  (path, body, signal) => request('PATCH',  path, body, signal),
   delete: (path, signal)       => request('DELETE', path, null, signal),
 };

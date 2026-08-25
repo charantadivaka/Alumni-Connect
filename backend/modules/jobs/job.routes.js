@@ -18,7 +18,8 @@ router.post('/', roleCheck(['alumni', 'admin']), validate.validateCreateJob, job
 router.get('/my/posts', roleCheck(['alumni']), jobController.getMyJobs);
 router.put('/:id', roleCheck(['alumni', 'admin']), validate.validateCreateJob, jobController.updateJob);
 router.delete('/:id', roleCheck(['alumni', 'admin']), jobController.deleteJob);
-router.put('/:id/toggle-status', roleCheck(['alumni', 'admin']), jobController.toggleJobStatus);
+router.patch('/:id/status', roleCheck(['alumni', 'admin']), jobController.updateJobStatus);
+router.post('/:id/duplicate', roleCheck(['alumni', 'admin']), jobController.duplicateJob);
 router.post('/:id/report', jobController.reportJob);
 
 module.exports = router;

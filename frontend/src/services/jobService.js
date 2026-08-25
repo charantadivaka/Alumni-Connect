@@ -11,7 +11,8 @@ export const jobService = {
   getMy:     ()             => api.get('/jobs/my/posts'),
   create:    (data)         => api.post('/jobs', data),
   update:    (id, data)     => api.put(`/jobs/${id}`, data),
-  toggle:    (id)           => api.put(`/jobs/${id}/toggle-status`),
+  updateStatus:(id, status) => api.patch(`/jobs/${id}/status`, { status }),
+  duplicate: (id)           => api.post(`/jobs/${id}/duplicate`),
   remove:    (id)           => api.delete(`/jobs/${id}`),
   report:    (id)           => api.post(`/jobs/${id}/report`),
 };

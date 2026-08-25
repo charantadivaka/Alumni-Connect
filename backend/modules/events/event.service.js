@@ -74,6 +74,22 @@ const getAllEvents = async (user, query) => {
  * Create an event.
  */
 const createEvent = async (data, user) => {
+    const studentAllowed = ['Hackathon', 'Coding Contest', 'Workshop', 'Other'];
+    const alumniAllowed = ['Webinar', 'Career Fair', 'Networking', 'Seminar', 'Tech Talk', 'Workshop', 'Other'];
+
+    if (user.role === 'student' && !studentAllowed.includes(data.category)) {
+        throw Object.assign(
+            new Error(`Students can only create: ${studentAllowed.join(', ')}`),
+            { statusCode: 400 }
+        );
+    }
+    
+    if (user.role === 'alumni' && !alumniAllowed.includes(data.category)) {
+        throw Object.assign(
+            new Error(`Alumni can only create: ${alumniAllowed.join(', ')}`),
+            { statusCode: 400 }
+        );
+    }
 
     const event = await Event.create({
         ...data,

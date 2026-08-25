@@ -12,4 +12,11 @@ router.get('/:userId', messageController.getConversation);
 router.post('/', messageController.saveMessage);
 router.put('/:userId/read', messageController.markRead);
 
+// New Features
+router.put('/:id', messageController.editMessage);
+router.delete('/:id', messageController.deleteMessage);
+router.delete('/conversation/:userId', messageController.deleteConversation);
+router.post('/block/:userId', messageController.blockUser);
+router.post('/report/:userId', messageController.reportUser);
+
 module.exports = router;

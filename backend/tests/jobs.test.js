@@ -72,12 +72,13 @@ describe('Jobs API Integration Tests', () => {
     });
 
     it('should fetch all active jobs', async () => {
+        await Job.deleteMany({});
         await Job.create({
             title: 'Active Job',
             company: 'Comp A',
             description: 'Desc',
             postedBy: alumniId,
-            isActive: true
+            status: 'Active'
         });
 
         await Job.create({
@@ -85,7 +86,7 @@ describe('Jobs API Integration Tests', () => {
             company: 'Comp A',
             description: 'Desc',
             postedBy: alumniId,
-            isActive: false
+            status: 'Closed'
         });
 
         const res = await request(app)
