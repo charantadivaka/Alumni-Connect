@@ -78,7 +78,8 @@ const duplicateJob = async (req, res, next) => {
 
 const reportJob = async (req, res, next) => {
     try {
-        await jobService.reportJob(req.params.id, req.user._id);
+        const { reason } = req.body;
+        await jobService.reportJob(req.params.id, req.user._id, reason);
         sendSuccess(res, null, 'Job reported to admins');
     } catch (err) {
         next(err);

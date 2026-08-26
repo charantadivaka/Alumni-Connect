@@ -180,15 +180,26 @@ const StudentEvents = () => {
     }
   };
 
-  const handleReportEvent = async (e, eventId) => {
+  const [reportingEventId, setReportingEventId] = useState(null);
+  const [reportReason, setReportReason] = useState('');
+
+  const handleReportEventClick = (e, eventId) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to report this event as spam or inappropriate?")) {
-      try {
-        await eventService.report(eventId);
-        alert('Event reported to admin successfully.');
-      } catch (err) {
-        alert(err.response?.data?.message || err.message || 'Failed to report event');
-      }
+    setReportingEventId(eventId);
+    setReportReason('');
+  };
+
+  const submitReportEvent = async () => {
+    if (!reportReason) {
+      alert('Please select a reason for reporting.');
+      return;
+    }
+    try {
+      await eventService.report(reportingEventId, { reason: reportReason });
+      alert('Event reported to admin successfully.');
+      setReportingEventId(null);
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to report event');
     }
   };
 
@@ -313,11 +324,11 @@ const StudentEvents = () => {
                     </button>
                     {!isOwner && (
                       <button 
-                        onClick={(e) => handleReportEvent(e, ev._id)}
+                        onClick={(e) => handleReportEventClick(e, ev._id)}
                         style={{ position: 'absolute', top: 15, right: 15, background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--clr-danger)' }}
                         title="Report Event"
                       >
-                        ??
+                        🚩
                       </button>
                     )}
                     
@@ -327,14 +338,14 @@ const StudentEvents = () => {
 
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: '0.875rem', color: 'var(--clr-text-muted)', alignItems: 'center' }}>
                       <span className="badge" style={{ backgroundColor: 'transparent', border: `1px solid ${status.color}`, color: status.color, fontSize: '0.72rem', padding: '2px 8px' }}>
-                        {status.label === 'Live Now' ? '?? ' : status.label === 'Upcoming' ? '?? ' : status.label === 'Completed' ? '? ' : ''}{status.label}
+                        {status.label === 'Live Now' ? '🟢 ' : status.label === 'Upcoming' ? '🔵 ' : status.label === 'Completed' ? '⚪ ' : ''}{status.label}
                       </span>
                       <span className="badge badge-ghost" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{ev.category}</span>
                     </div>
                     
                     <div style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', display: 'flex', gap: 10 }}>
-                      <span>?? {eventDate.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                      <span>?? {ev.location}</span>
+                      <span>📅 {eventDate.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>📍 {ev.location}</span>
                     </div>
 
                     <p className="text-sm" style={{ margin: 0, lineHeight: 1.6 }}>
@@ -351,7 +362,7 @@ const StudentEvents = () => {
                       
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         {ev.link && !isCancelled && (
-                          <a href={ev.link} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">?? Link</a>
+                          <a href={ev.link} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">🔗 Link</a>
                         )}
                         
                         {isOwner ? (
@@ -397,6 +408,36 @@ const StudentEvents = () => {
               </div>
             )}
           </>
+        )}
+
+        {/* Report Event Modal */}
+        {reportingEventId && (
+          <div className="modal-overlay-custom" onClick={() => setReportingEventId(null)}>
+            <div className="card" style={{ maxWidth: '400px', width: '100%', padding: 'var(--sp-lg)' }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ marginTop: 0 }}>Report Event</h3>
+              <p className="text-muted text-sm" style={{ marginBottom: 'var(--sp-md)' }}>Please select a reason for reporting this event. This helps our admin team take appropriate action.</p>
+              
+              <select 
+                className="form-input" 
+                value={reportReason} 
+                onChange={(e) => setReportReason(e.target.value)}
+                style={{ marginBottom: 'var(--sp-md)', width: '100%' }}
+              >
+                <option value="">Select a reason...</option>
+                <option value="Fake event">Fake event</option>
+                <option value="Incorrect information">Incorrect information</option>
+                <option value="Spam">Spam</option>
+                <option value="Inappropriate content">Inappropriate content</option>
+                <option value="Cancelled event">Cancelled event</option>
+                <option value="Other">Other</option>
+              </select>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button className="btn btn-ghost" onClick={() => setReportingEventId(null)}>Cancel</button>
+                <button className="btn btn-primary" onClick={submitReportEvent} disabled={!reportReason} style={{ backgroundColor: 'var(--clr-danger)', borderColor: 'var(--clr-danger)' }}>Report</button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

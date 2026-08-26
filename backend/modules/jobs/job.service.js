@@ -238,16 +238,18 @@ const updateJobStatus = async (jobId, userId, newStatus) => {
     return job;
 };
 
-/** Report a job listing. */
-const reportJob = async (jobId, userId) => {
+const reportJob = async (jobId, userId, reason) => {
+    if (!reason) throw Object.assign(new Error('Report reason is required'), { statusCode: 400 });
+
     const job = await Job.findById(jobId);
     if (!job) throw Object.assign(new Error('Job not found'), { statusCode: 404 });
 
-    if (job.reports.includes(userId)) {
+    const alreadyReported = job.reports.some(r => r.reportedBy.toString() === userId.toString());
+    if (alreadyReported) {
         throw Object.assign(new Error('You have already reported this job'), { statusCode: 400 });
     }
 
-    job.reports.push(userId);
+    job.reports.push({ reportedBy: userId, reason });
     await job.save();
     await invalidatePattern(JOB_CACHE_PATTERN);
 };

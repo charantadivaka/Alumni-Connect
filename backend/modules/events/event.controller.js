@@ -51,8 +51,9 @@ const deleteEvent = async (req, res, next) => {
 
 const reportEvent = async (req, res, next) => {
     try {
-        await eventService.reportEvent(req.params.id, req.user._id);
-        sendSuccess(res, null, 'Event reported to admins');
+        const { reason } = req.body;
+        await eventService.reportEvent(req.params.id, req.user._id, reason);
+        sendSuccess(res, null, 'Event reported successfully');
     } catch (err) {
         next(err);
     }

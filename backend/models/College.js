@@ -29,7 +29,7 @@ const collegeSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
-    // ── Fee / Payment tracking ───────────────────────────────────────────
+    // ── Fee / Payment tracking (Legacy) ──────────────────────────────────
     feesPaid: {
         type: Boolean,
         default: false,
@@ -46,6 +46,28 @@ const collegeSchema = new mongoose.Schema({
         type: String,
         default: null,
     },
+    
+    // ── Subscription Details ─────────────────────────────────────────────
+    subscriptionStatus: {
+        type: String,
+        enum: ['Active', 'Payment Pending', 'Expired', 'Suspended'],
+        default: 'Active'
+    },
+    subscriptionPlan: {
+        type: String,
+        default: 'Standard'
+    },
+    subscriptionExpiry: {
+        type: Date,
+        default: null
+    },
+    subscriptionHistory: [{
+        plan: String,
+        amount: Number,
+        status: { type: String, enum: ['Paid', 'Failed', 'Pending'] },
+        paymentDate: { type: Date, default: Date.now },
+        notes: String
+    }],
     // Contact email of whoever registered the college
     registrantEmail: {
         type: String,

@@ -151,16 +151,18 @@ const deleteEvent = async (eventId, user) => {
     await invalidatePattern(EVENT_CACHE_PATTERN);
 };
 
-/** Report an event. */
-const reportEvent = async (eventId, userId) => {
+const reportEvent = async (eventId, userId, reason) => {
+    if (!reason) throw Object.assign(new Error('Report reason is required'), { statusCode: 400 });
+
     const event = await Event.findById(eventId);
     if (!event) throw Object.assign(new Error('Event not found'), { statusCode: 404 });
 
-    if (event.reports.includes(userId)) {
+    const alreadyReported = event.reports.some(r => r.reportedBy.toString() === userId.toString());
+    if (alreadyReported) {
         throw Object.assign(new Error('You have already reported this event'), { statusCode: 400 });
     }
 
-    event.reports.push(userId);
+    event.reports.push({ reportedBy: userId, reason });
     await event.save();
     await invalidatePattern(EVENT_CACHE_PATTERN);
 };

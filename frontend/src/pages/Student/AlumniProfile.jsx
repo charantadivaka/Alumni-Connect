@@ -43,7 +43,7 @@ const AlumniProfile = () => {
       <Sidebar />
       <main className="dashboard-main fade-in">
         <div className="page-header" style={{ marginBottom: 16 }}>
-          <Link to={`/${user.role}/network`} className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }}>← Back to Directory</Link>
+          <Link to={user.role === 'admin' ? '/admin/users' : `/${user.role}/network`} className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }}>← Back to Directory</Link>
           <h1>Alumni Profile</h1>
         </div>
 

@@ -59,15 +59,26 @@ const AlumniEvents = () => {
     }
   };
 
-  const handleReportEvent = async (e, eventId) => {
+  const [reportingEventId, setReportingEventId] = useState(null);
+  const [reportReason, setReportReason] = useState('');
+
+  const handleReportEventClick = (e, eventId) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to report this event as spam or inappropriate?")) {
-      try {
-        await eventService.report(eventId);
-        alert('Event reported to admin successfully.');
-      } catch (err) {
-        alert(err.response?.data?.message || err.message || 'Failed to report event');
-      }
+    setReportingEventId(eventId);
+    setReportReason('');
+  };
+
+  const submitReportEvent = async () => {
+    if (!reportReason) {
+      alert('Please select a reason for reporting.');
+      return;
+    }
+    try {
+      await eventService.report(reportingEventId, { reason: reportReason });
+      alert('Event reported to admin successfully.');
+      setReportingEventId(null);
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to report event');
     }
   };
 
@@ -170,13 +181,43 @@ const AlumniEvents = () => {
                       {isOwner ? (
                         <button className="btn btn-ghost btn-sm" style={{ color: 'var(--clr-danger)' }} onClick={() => handleDelete(ev._id)}>Delete</button>
                       ) : (
-                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--clr-danger)' }} onClick={(e) => handleReportEvent(e, ev._id)} title="Report Event">🚩 Report</button>
+                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--clr-danger)' }} onClick={(e) => handleReportEventClick(e, ev._id)} title="Report Event">🚩 Report</button>
                       )}
                     </div>
                   </div>
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Report Event Modal */}
+        {reportingEventId && (
+          <div className="modal-overlay-custom" onClick={() => setReportingEventId(null)}>
+            <div className="card" style={{ maxWidth: '400px', width: '100%', padding: 'var(--sp-lg)' }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ marginTop: 0 }}>Report Event</h3>
+              <p className="text-muted text-sm" style={{ marginBottom: 'var(--sp-md)' }}>Please select a reason for reporting this event. This helps our admin team take appropriate action.</p>
+              
+              <select 
+                className="form-input" 
+                value={reportReason} 
+                onChange={(e) => setReportReason(e.target.value)}
+                style={{ marginBottom: 'var(--sp-md)', width: '100%' }}
+              >
+                <option value="">Select a reason...</option>
+                <option value="Fake event">Fake event</option>
+                <option value="Incorrect information">Incorrect information</option>
+                <option value="Spam">Spam</option>
+                <option value="Inappropriate content">Inappropriate content</option>
+                <option value="Cancelled event">Cancelled event</option>
+                <option value="Other">Other</option>
+              </select>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button className="btn btn-ghost" onClick={() => setReportingEventId(null)}>Cancel</button>
+                <button className="btn btn-primary" onClick={submitReportEvent} disabled={!reportReason} style={{ backgroundColor: 'var(--clr-danger)', borderColor: 'var(--clr-danger)' }}>Report</button>
+              </div>
+            </div>
           </div>
         )}
       </main>

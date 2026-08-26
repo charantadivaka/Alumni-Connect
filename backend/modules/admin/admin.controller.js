@@ -67,7 +67,35 @@ const getReportedEvents = async (req, res, next) => {
     }
 };
 
+const getUserGrowth = async (req, res, next) => {
+    try {
+        const { days } = req.query;
+        const growth = await adminService.getUserGrowth(days);
+        sendSuccess(res, growth);
+    } catch (err) {
+        next(err);
+    }
+};
+
+const resolveReport = async (req, res, next) => {
+    try {
+        const { type, id, reportId } = req.params;
+        const { action } = req.body;
+        await adminService.resolveReport(type, id, reportId, action, req.user, req.ip);
+        sendSuccess(res, null, `Report resolved with action: ${action}`);
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
-    getAllUsers, getVerificationQueue, verifyAlumni,
-    toggleSuspend, getAnalytics, getReportedJobs, getReportedEvents
+    getAllUsers,
+    getVerificationQueue,
+    verifyAlumni,
+    toggleSuspend,
+    getAnalytics,
+    getReportedJobs,
+    getReportedEvents,
+    getUserGrowth,
+    resolveReport
 };

@@ -9,7 +9,7 @@ export const eventService = {
   update:  (id, data)     => api.put(`/events/${id}`, data),
   rsvp:    (id)           => api.put(`/events/${id}/rsvp`),
   remove:  (id)           => api.delete(`/events/${id}`),
-  report:  (id)           => api.post(`/events/${id}/report`),
+  report:  (id, data)     => api.post(`/events/${id}/report`, data),
 };
 
 export const forumService = {

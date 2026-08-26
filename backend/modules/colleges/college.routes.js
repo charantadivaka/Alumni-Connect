@@ -15,6 +15,8 @@ router.use(protect);
 router.use(roleCheck(['admin']));
 router.get('/admin', collegeController.getAllCollegesAdmin);
 router.post('/admin', collegeController.createCollege);
+router.get('/admin/:id/details', collegeController.getCollegeDetails);
+router.put('/admin/:id/renew', collegeController.renewSubscription);
 router.put('/admin/:id', collegeController.updateCollege);
 router.delete('/admin/:id', collegeController.deleteCollege);
 

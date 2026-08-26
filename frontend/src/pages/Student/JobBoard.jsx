@@ -77,15 +77,26 @@ const JobBoard = () => {
     setSelectedJob(job);
   };
 
-  const handleReportJob = async (e, jobId) => {
+  const [reportingJobId, setReportingJobId] = useState(null);
+  const [reportReason, setReportReason] = useState('');
+
+  const handleReportJobClick = (e, jobId) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to report this job as spam or inappropriate?")) {
-      try {
-        await jobService.report(jobId);
-        alert('Job reported to admin successfully.');
-      } catch (err) {
-        alert(err.message || 'Failed to report job');
-      }
+    setReportingJobId(jobId);
+    setReportReason('');
+  };
+
+  const submitReportJob = async () => {
+    if (!reportReason) {
+      alert('Please select a reason for reporting.');
+      return;
+    }
+    try {
+      await jobService.report(reportingJobId, { reason: reportReason });
+      alert('Job reported to admin successfully.');
+      setReportingJobId(null);
+    } catch (err) {
+      alert(err.message || 'Failed to report job');
     }
   };
 
@@ -151,7 +162,7 @@ const JobBoard = () => {
                   {bookmarks.has(job._id) ? '🔖' : '🤍'}
                 </button>
                 <button 
-                  onClick={(e) => handleReportJob(e, job._id)}
+                  onClick={(e) => handleReportJobClick(e, job._id)}
                   style={{ position: 'absolute', top: 15, right: 15, background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--clr-danger)' }}
                   title="Report Job"
                 >
@@ -188,9 +199,39 @@ const JobBoard = () => {
           onPageChange={(page) => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         />
 
-        {/* Modal Overlay */}
+        {/* Modal Overlay for Job Details */}
         {selectedJob && (
           <JobModal selectedJob={selectedJob} closeModal={() => setSelectedJob(null)} />
+        )}
+
+        {/* Report Job Modal */}
+        {reportingJobId && (
+          <div className="modal-overlay-custom" onClick={() => setReportingJobId(null)}>
+            <div className="card" style={{ maxWidth: '400px', width: '100%', padding: 'var(--sp-lg)' }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ marginTop: 0 }}>Report Job</h3>
+              <p className="text-muted text-sm" style={{ marginBottom: 'var(--sp-md)' }}>Please select a reason for reporting this job. This helps our admin team take appropriate action.</p>
+              
+              <select 
+                className="form-input" 
+                value={reportReason} 
+                onChange={(e) => setReportReason(e.target.value)}
+                style={{ marginBottom: 'var(--sp-md)', width: '100%' }}
+              >
+                <option value="">Select a reason...</option>
+                <option value="Fake/scam job">Fake/scam job</option>
+                <option value="Incorrect information">Incorrect information</option>
+                <option value="Expired job">Expired job</option>
+                <option value="Inappropriate content">Inappropriate content</option>
+                <option value="Duplicate job">Duplicate job</option>
+                <option value="Other">Other</option>
+              </select>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button className="btn btn-ghost" onClick={() => setReportingJobId(null)}>Cancel</button>
+                <button className="btn btn-primary" onClick={submitReportJob} disabled={!reportReason} style={{ backgroundColor: 'var(--clr-danger)', borderColor: 'var(--clr-danger)' }}>Report</button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

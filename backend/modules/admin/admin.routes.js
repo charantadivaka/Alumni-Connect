@@ -14,7 +14,9 @@ router.get('/verifications', adminController.getVerificationQueue);
 router.put('/users/:id/verify', adminController.verifyAlumni);
 router.put('/users/:id/suspend', adminController.toggleSuspend);
 router.get('/analytics', cacheMiddleware(600), adminController.getAnalytics);
+router.get('/growth', adminController.getUserGrowth);
 router.get('/reports/jobs', adminController.getReportedJobs);
 router.get('/reports/events', adminController.getReportedEvents);
+router.post('/reports/:type/:id/:reportId/resolve', adminController.resolveReport);
 
 module.exports = router;

@@ -110,8 +110,8 @@ const getCollegeFeeStatus = async (name) => {
     }
 
     const now = new Date();
-    const expiry = college.feePaidUntil ? new Date(college.feePaidUntil) : null;
-    const isExpired = expiry ? expiry < now : true;
+    const expiry = college.subscriptionExpiry ? new Date(college.subscriptionExpiry) : null;
+    const isExpired = college.subscriptionStatus === 'Expired' || (expiry && expiry < now);
     const daysRemaining = expiry
         ? Math.max(0, Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)))
         : 0;
@@ -120,14 +120,86 @@ const getCollegeFeeStatus = async (name) => {
         found: true,
         collegeName: college.name,
         isActive: college.isActive,
-        feesPaid: college.feesPaid,
-        feePaidUntil: expiry ? expiry.toISOString() : null,
+        subscriptionStatus: college.subscriptionStatus,
+        subscriptionPlan: college.subscriptionPlan,
+        subscriptionExpiry: expiry ? expiry.toISOString() : null,
         isExpired,
         daysRemaining,
     };
 };
 
+/**
+ * Get full details of a single college, including aggregated stats.
+ */
+const getCollegeDetails = async (id) => {
+    const college = await College.findById(id);
+    if (!college) throw Object.assign(new Error('College not found'), { statusCode: 404 });
+
+    const User = require('../../models/User');
+    const Job = require('../../models/Job');
+    const Connection = require('../../models/Connection');
+
+    // Stats
+    const studentsCount = await User.countDocuments({ college: id, role: 'student' });
+    const alumniCount = await User.countDocuments({ college: id, role: 'alumni' });
+    const activeUsersCount = await User.countDocuments({ college: id, isSuspended: false });
+
+    // Mentorships & Jobs (Count items owned by alumni of this college)
+    const alumniIds = (await User.find({ college: id, role: 'alumni' }).select('_id')).map(u => u._id);
+    
+    // Total students helped by these alumni
+    const alumniData = await User.find({ college: id, role: 'alumni' }).select('studentsHelped');
+    const mentorshipsCount = alumniData.reduce((acc, curr) => acc + (curr.studentsHelped || 0), 0);
+    
+    const jobsCount = await Job.countDocuments({ postedBy: { $in: alumniIds } });
+
+    // Connections (Count where either sender or receiver is from this college)
+    const allUserIds = (await User.find({ college: id }).select('_id')).map(u => u._id);
+    const connectionsCount = await Connection.countDocuments({
+        $or: [{ sender: { $in: allUserIds } }, { receiver: { $in: allUserIds } }],
+        status: 'Accepted'
+    });
+
+    return {
+        college,
+        stats: {
+            studentsCount,
+            alumniCount,
+            activeUsersCount,
+            mentorshipsCount,
+            jobsCount,
+            connectionsCount
+        }
+    };
+};
+
+/**
+ * Renew or update subscription for a college.
+ */
+const renewSubscription = async (id, renewalData) => {
+    const college = await College.findById(id);
+    if (!college) throw Object.assign(new Error('College not found'), { statusCode: 404 });
+
+    const { plan, amount, expiryDate, status = 'Paid', notes = '' } = renewalData;
+
+    college.subscriptionStatus = 'Active';
+    if (plan) college.subscriptionPlan = plan;
+    if (expiryDate) college.subscriptionExpiry = new Date(expiryDate);
+    
+    college.subscriptionHistory.push({
+        plan: plan || college.subscriptionPlan,
+        amount: Number(amount) || 0,
+        status,
+        paymentDate: new Date(),
+        notes
+    });
+
+    await college.save();
+    return college;
+};
+
 module.exports = {
     getActiveColleges, getAllCollegesAdmin, createCollege, updateCollege,
     deleteCollege, validateRollNumber, getCollegeFeeStatus,
+    getCollegeDetails, renewSubscription
 };

@@ -1,71 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { adminService } from '../../services/adminService';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/Admin/ManageColleges.css';
 
-// ── Live Regex Tester ─────────────────────────────────────────────────────────
-const RegexTester = ({ pattern, example }) => {
-  const [testInput, setTestInput] = useState(example || '');
-  const [result, setResult] = useState(null);
-
-  useEffect(() => {
-    setTestInput(example || '');
-  }, [example]);
-
-  useEffect(() => {
-    if (!pattern || !testInput) { setResult(null); return; }
-    try {
-      const regex = new RegExp(pattern);
-      setResult(regex.test(testInput.trim()));
-    } catch {
-      setResult('invalid');
-    }
-  }, [pattern, testInput]);
-
-  const resultClass =
-    result === true    ? 'regex-tester-result regex-tester-result--pass' :
-    result === false   ? 'regex-tester-result regex-tester-result--fail' :
-    result === 'invalid' ? 'regex-tester-result regex-tester-result--warn' :
-    'regex-tester-result';
-
-  const borderStyle =
-    result === true    ? { border: '1.5px solid var(--clr-success)' } :
-    result === false   ? { border: '1.5px solid var(--clr-danger)' } :
-    result === 'invalid' ? { border: '1.5px solid var(--clr-warning)' } :
-    {};
-
-  const msg =
-    result === true    ? '✅ Matches the pattern' :
-    result === false   ? '❌ Does not match the pattern' :
-    result === 'invalid' ? '⚠️ Regex syntax error' :
-    '';
-
-  return (
-    <div style={{ marginTop: 6 }}>
-      <label className="form-label regex-tester-label">
-        Live Test — type a roll number to check
-      </label>
-      <input
-        className="form-input"
-        placeholder="e.g. S20230010237"
-        value={testInput}
-        onChange={e => setTestInput(e.target.value)}
-        style={{ transition: 'border-color 0.2s', ...borderStyle }}
-      />
-      {msg && <div className={resultClass}>{msg}</div>}
-    </div>
-  );
-};
-
 // ── Modal Form ────────────────────────────────────────────────────────────────
-const CollegeForm = ({ initial, onSave, onClose, saving }) => {
+const CollegeForm = ({ onSave, onClose, saving }) => {
   const [form, setForm] = useState({
     name: '',
     rollNumberPattern: '',
     exampleFormat: '',
     patternDescription: '',
     isActive: true,
-    ...initial,
   });
   const [localErr, setLocalErr] = useState('');
 
@@ -95,73 +41,27 @@ const CollegeForm = ({ initial, onSave, onClose, saving }) => {
     <div className="modal-overlay-custom" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="card college-form-card">
         <div className="college-form-header">
-          <h2 className="college-form-title">{initial ? 'Edit College' : 'Add New College'}</h2>
+          <h2 className="college-form-title">Add New College</h2>
           <button onClick={onClose} className="college-form-close">✕</button>
         </div>
-
-        {localErr && <div className="auth-error-banner">{localErr}</div>}
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          {/* College Name */}
+        <form onSubmit={handleSubmit} className="college-form-body">
+          {localErr && <div className="feedback-banner feedback-banner--error">{localErr}</div>}
           <div className="form-group">
-            <label className="form-label">College Name <span className="required-star">*</span></label>
-            <input className="form-input" placeholder="e.g. IIIT Sri City" required value={form.name} onChange={e => set('name', e.target.value)} />
+            <label className="form-label">College Name *</label>
+            <input className="form-input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Indian Institute of Information Technology" required />
           </div>
-
-          {/* Regex Pattern */}
           <div className="form-group">
-            <label className="form-label">
-              Roll Number Pattern (Regex) <span className="required-star">*</span>
-            </label>
-            <input
-              className="form-input regex-input"
-              placeholder="e.g. ^S\d{4}\d{7}$"
-              required
-              value={form.rollNumberPattern}
-              onChange={e => set('rollNumberPattern', e.target.value)}
-            />
-            <div className="regex-hint">
-              Use standard JavaScript regex. Example: <code className="regex-hint-code">{'^S\\d{4}\\d{7}$'}</code> matches <em>S20230010237</em>
-            </div>
+            <label className="form-label">Roll Number Pattern (Regex) *</label>
+            <input className="form-input" value={form.rollNumberPattern} onChange={e => set('rollNumberPattern', e.target.value)} placeholder="e.g. ^S\d{4}\d{7}$" required />
           </div>
-
-          {/* Example Format */}
           <div className="form-group">
-            <label className="form-label">Example Roll Number <span className="required-star">*</span></label>
-            <input className="form-input" placeholder="e.g. S20230010237" required value={form.exampleFormat} onChange={e => set('exampleFormat', e.target.value)} />
-            <div className="field-hint">This is shown to students as a hint during registration.</div>
+            <label className="form-label">Example Format *</label>
+            <input className="form-input" value={form.exampleFormat} onChange={e => set('exampleFormat', e.target.value)} placeholder="e.g. S20230010237" required />
           </div>
-
-          {/* Live Regex Tester */}
-          <div className="form-group regex-tester-box">
-            <div className="regex-tester-label">🧪 Live Pattern Tester</div>
-            <RegexTester pattern={form.rollNumberPattern} example={form.exampleFormat} />
-          </div>
-
-          {/* Description */}
-          <div className="form-group">
-            <label className="form-label">Pattern Description <span className="optional-label">(optional)</span></label>
-            <input className="form-input" placeholder="e.g. S + 4-digit year + 7-digit roll number" value={form.patternDescription} onChange={e => set('patternDescription', e.target.value)} />
-          </div>
-
-          {/* Active toggle */}
-          <div className="checkbox-row">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={form.isActive}
-              onChange={e => set('isActive', e.target.checked)}
-              className="checkbox-input"
-            />
-            <label htmlFor="isActive" className="checkbox-label">
-              Active (visible to students during registration)
-            </label>
-          </div>
-
-          <div className="form-actions">
+          <div className="form-actions" style={{ marginTop: '1.5rem' }}>
             <button type="button" className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
             <button className="btn btn-primary" style={{ flex: 2 }} type="submit" disabled={saving}>
-              {saving ? 'Saving…' : initial ? 'Save Changes' : 'Add College'}
+              {saving ? 'Saving…' : 'Add College'}
             </button>
           </div>
         </form>
@@ -175,11 +75,14 @@ const ManageColleges = () => {
   const [colleges, setColleges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [visibilityFilter, setVisibilityFilter] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  const navigate = useNavigate();
 
   const flash = (msg, type = 'success') => {
     if (type === 'success') { setSuccess(msg); setTimeout(() => setSuccess(''), 3000); }
@@ -203,17 +106,10 @@ const ManageColleges = () => {
   const handleSave = async (form) => {
     setSaving(true);
     try {
-      if (editing) {
-        const updated = await adminService.updateCollege(editing._id, form);
-        setColleges(prev => prev.map(c => c._id === updated._id ? updated : c));
-        flash('College updated successfully!');
-      } else {
-        const created = await adminService.createCollege(form);
-        setColleges(prev => [...prev, created]);
-        flash('College added successfully!');
-      }
+      const created = await adminService.createCollege(form);
+      setColleges(prev => [...prev, created]);
+      flash('College added successfully!');
       setShowForm(false);
-      setEditing(null);
     } catch (err) {
       flash(err.message, 'error');
     } finally {
@@ -221,31 +117,53 @@ const ManageColleges = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await adminService.deleteCollege(id);
-      setColleges(prev => prev.filter(c => c._id !== id));
-      setDeleteConfirm(null);
-      flash('College deleted.');
-    } catch (err) {
-      flash(err.message, 'error');
-    }
-  };
+  // Filter logic
+  const filteredColleges = colleges.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter ? c.subscriptionStatus === statusFilter : true;
+    let matchesVisibility = true;
+    if (visibilityFilter === 'Active') matchesVisibility = c.isActive === true;
+    if (visibilityFilter === 'Disabled') matchesVisibility = c.isActive === false;
+    
+    return matchesSearch && matchesStatus && matchesVisibility;
+  });
 
   return (
     <div className="dashboard-layout">
       <Sidebar />
       <main className="dashboard-main fade-in">
-
         {/* Header */}
-        <div className="page-header-row">
-          <div>
-            <h1>Manage Colleges</h1>
-            <p>Define colleges and their roll number patterns. Students must match these patterns during registration.</p>
+        <div className="page-header-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+            <div>
+              <h1>Manage Colleges</h1>
+              <p>View subscriptions, edit details, and add new institutions.</p>
+            </div>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Add College</button>
           </div>
-          <button className="btn btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>
-            + Add College
-          </button>
+
+          <div className="filters-grid" style={{ display: 'flex', gap: '1rem', width: '100%', marginTop: '1rem' }}>
+            <input
+              type="text"
+              placeholder="Search college by name..."
+              className="form-input"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ flex: 2 }}
+            />
+            <select className="form-input" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: 1 }}>
+              <option value="">All Subscriptions</option>
+              <option value="Active">🟢 Active</option>
+              <option value="Payment Pending">🟡 Payment Pending</option>
+              <option value="Expired">🔴 Expired</option>
+              <option value="Suspended">⏸️ Suspended</option>
+            </select>
+            <select className="form-input" value={visibilityFilter} onChange={e => setVisibilityFilter(e.target.value)} style={{ flex: 1 }}>
+              <option value="">All Visibility</option>
+              <option value="Active">👁️ Visible (Active)</option>
+              <option value="Disabled">🚫 Hidden (Disabled)</option>
+            </select>
+          </div>
         </div>
 
         {/* Feedback banners */}
@@ -255,56 +173,50 @@ const ManageColleges = () => {
         {/* Table */}
         {loading ? (
           <div className="loading-state"><span className="spinner" /> Loading colleges...</div>
-        ) : colleges.length === 0 ? (
+        ) : filteredColleges.length === 0 ? (
           <div className="empty-state card">
             <div className="empty-icon">🏛️</div>
-            <h3>No colleges yet</h3>
-            <p>Click "Add College" to get started. Students won't see a college dropdown until at least one is added.</p>
+            <h3>No colleges found</h3>
+            <p>Try adjusting your search or filters, or add a new college.</p>
           </div>
         ) : (
-          <div className="card table-wrapper">
-            <table className="data-table data-table--min-700">
+          <div className="card table-wrapper" style={{ marginTop: '1.5rem' }}>
+            <table className="data-table data-table--min-800">
               <thead className="table-head">
                 <tr>
                   <th className="table-cell table-cell--header">College</th>
-                  <th className="table-cell table-cell--header">Pattern (Regex)</th>
-                  <th className="table-cell table-cell--header">Example</th>
-                  <th className="table-cell table-cell--header">Status</th>
+                  <th className="table-cell table-cell--header">Visibility</th>
+                  <th className="table-cell table-cell--header">Subscription Plan</th>
+                  <th className="table-cell table-cell--header">Subscription Status</th>
+                  <th className="table-cell table-cell--header">Expiry Date</th>
                   <th className="table-cell table-cell--header">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {colleges.map(col => (
+                {filteredColleges.map(col => (
                   <tr key={col._id} className="table-row">
                     <td className="table-cell">
-                      <div className="college-name">{col.name}</div>
-                      {col.patternDescription && (
-                        <div className="college-desc">{col.patternDescription}</div>
-                      )}
+                      <strong>{col.name}</strong>
                     </td>
                     <td className="table-cell">
-                      <code className="college-pattern-code">{col.rollNumberPattern}</code>
+                      {col.isActive ? <span className="badge badge-success">👁️ Visible</span> : <span className="badge badge-danger">🚫 Hidden</span>}
                     </td>
                     <td className="table-cell">
-                      <span className="college-example-badge">{col.exampleFormat}</span>
+                      {col.subscriptionPlan || 'N/A'}
                     </td>
                     <td className="table-cell">
-                      <span className={`badge ${col.isActive ? 'badge-success' : 'badge-danger'}`}>
-                        {col.isActive ? 'Active' : 'Inactive'}
-                      </span>
+                      {col.subscriptionStatus === 'Active' && <span className="badge badge-success">🟢 Active</span>}
+                      {col.subscriptionStatus === 'Payment Pending' && <span className="badge badge-warning" style={{ background: 'var(--clr-warning-bg)', color: 'var(--clr-warning)' }}>🟡 Pending</span>}
+                      {col.subscriptionStatus === 'Expired' && <span className="badge badge-danger">🔴 Expired</span>}
+                      {col.subscriptionStatus === 'Suspended' && <span className="badge" style={{ background: 'var(--clr-bg-alt)' }}>⏸️ Suspended</span>}
                     </td>
                     <td className="table-cell">
-                      <div className="table-actions">
-                        <button className="btn btn-sm btn-ghost" onClick={() => { setEditing(col); setShowForm(true); }}>Edit</button>
-                        {deleteConfirm === col._id ? (
-                          <>
-                            <button className="btn btn-sm btn-ghost" style={{ color: 'var(--clr-danger)' }} onClick={() => handleDelete(col._id)}>Confirm</button>
-                            <button className="btn btn-sm btn-ghost" onClick={() => setDeleteConfirm(null)}>Cancel</button>
-                          </>
-                        ) : (
-                          <button className="btn btn-sm btn-ghost" style={{ color: 'var(--clr-danger)' }} onClick={() => setDeleteConfirm(col._id)}>Delete</button>
-                        )}
-                      </div>
+                      {col.subscriptionExpiry ? new Date(col.subscriptionExpiry).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="table-cell">
+                      <button className="btn btn-sm btn-outline" onClick={() => navigate(`/admin/colleges/${col._id}`)}>
+                        View Details →
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -313,23 +225,13 @@ const ManageColleges = () => {
           </div>
         )}
 
-        {/* Tip box */}
-        <div className="tip-box">
-          <strong className="tip-box-strong">💡 How it works:</strong>{' '}
-          When a student or alumni selects a college during registration, their roll number is validated against that college's regex pattern.
-          A pattern like <code className="tip-box-code">{'^S\\d{4}\\d{7}$'}</code> matches
-          roll numbers like <code className="tip-box-code">S20230010237</code>.
-          Students from colleges not yet in this list can still register — the college field will simply be empty.
-        </div>
-
       </main>
 
       {/* Form Modal */}
       {showForm && (
         <CollegeForm
-          initial={editing}
           onSave={handleSave}
-          onClose={() => { setShowForm(false); setEditing(null); }}
+          onClose={() => setShowForm(false)}
           saving={saving}
         />
       )}

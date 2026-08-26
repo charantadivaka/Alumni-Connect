@@ -11,7 +11,12 @@ const eventSchema = new mongoose.Schema({
     createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     college:     { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
     rsvps:       [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    reports:     [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    reports: [{
+        reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        reason: { type: String, required: true },
+        status: { type: String, enum: ['Pending', 'Under Review', 'Resolved', 'Dismissed'], default: 'Pending' },
+        createdAt: { type: Date, default: Date.now }
+    }],
     status:      { type: String, enum: ['Scheduled', 'Cancelled'], default: 'Scheduled' },
     isActive:    { type: Boolean, default: true },
 }, { timestamps: true });

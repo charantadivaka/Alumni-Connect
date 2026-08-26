@@ -38,7 +38,11 @@ const Analytics = () => {
             <div className="grid-3 analytics-grid">
               {[
                 { emoji: '🤝', value: stats.totalMentorships,         label: 'Mentorships Initiated' },
+                { emoji: '🎓', value: stats.mentorshipsCompleted || 0, label: 'Mentorships Completed' },
+                { emoji: '🔥', value: stats.activeMentorships || 0,   label: 'Active Mentorships' },
                 { emoji: '🎙️', value: stats.totalMockInterviews || 0, label: 'Mock Interviews Scheduled' },
+                { emoji: '✅', value: stats.mockInterviewsCompleted || 0, label: 'Mock Interviews Completed' },
+                { emoji: '🔗', value: stats.connectionsCreated || 0,  label: 'Connections Created' },
                 { emoji: '💬', value: stats.totalForums,              label: 'Forum Discussions' },
               ].map(({ emoji, value, label }) => (
                 <div key={label} className="card analytics-card-primary">
@@ -53,7 +57,10 @@ const Analytics = () => {
             <div className="grid-3 analytics-grid">
               {[
                 { emoji: '💼', value: stats.totalJobs,                  label: 'Active Job Postings' },
+                { emoji: '📅', value: stats.jobsPostedThisMonth || 0,   label: 'Jobs Posted This Month' },
                 { emoji: '📄', value: stats.totalJobApplications || 0,  label: 'Applications Submitted' },
+                { emoji: '📊', value: stats.averageApplicationsPerJob || 0, label: 'Average Applications Per Job' },
+                { emoji: '📨', value: stats.referralsCompleted || 0,    label: 'Referrals Completed' },
                 { emoji: '🏆', value: stats.totalStories,               label: 'Success Stories Published' },
               ].map(({ emoji, value, label }) => (
                 <div key={label} className="card analytics-card-success">

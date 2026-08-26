@@ -24,7 +24,12 @@ const jobSchema = new mongoose.Schema({
     status:             { type: String, enum: ['Active', 'Paused', 'Closed', 'Scheduled'], default: 'Active' },
     deadline:           { type: Date },
     postedBy:           { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    reports:            [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    reports: [{
+        reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        reason: { type: String, required: true },
+        status: { type: String, enum: ['Pending', 'Under Review', 'Resolved', 'Dismissed'], default: 'Pending' },
+        createdAt: { type: Date, default: Date.now }
+    }],
     companyInsights: {
         culture:     { type: String, default: '' },
         interviewTips: { type: String, default: '' },

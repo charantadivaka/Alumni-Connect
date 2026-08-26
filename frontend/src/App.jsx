@@ -42,6 +42,7 @@ const AlumniMessages         = lazy(() => import('./pages/Alumni/Messages'));
 const AdminDashboard       = lazy(() => import('./pages/Admin/Dashboard'));
 const UserManagement       = lazy(() => import('./pages/Admin/UserManagement'));
 const ManageColleges       = lazy(() => import('./pages/Admin/ManageColleges'));
+const CollegeDetails       = lazy(() => import('./pages/Admin/CollegeDetails'));
 const VerificationQueue    = lazy(() => import('./pages/Admin/VerificationQueue'));
 const ContentModeration    = lazy(() => import('./pages/Admin/ContentModeration'));
 const Analytics            = lazy(() => import('./pages/Admin/Analytics'));
@@ -169,6 +170,7 @@ const App = () => {
           <Route path="/admin/dashboard"     element={<RoleGuard role="admin"><AdminDashboard /></RoleGuard>} />
           <Route path="/admin/users"         element={<RoleGuard role="admin"><UserManagement /></RoleGuard>} />
           <Route path="/admin/colleges"      element={<RoleGuard role="admin"><ManageColleges /></RoleGuard>} />
+          <Route path="/admin/colleges/:id"  element={<RoleGuard role="admin"><CollegeDetails /></RoleGuard>} />
           <Route path="/admin/verification"  element={<RoleGuard role="admin"><VerificationQueue /></RoleGuard>} />
           <Route path="/admin/moderation"    element={<RoleGuard role="admin"><ContentModeration /></RoleGuard>} />
           <Route path="/admin/analytics"     element={<RoleGuard role="admin"><Analytics /></RoleGuard>} />

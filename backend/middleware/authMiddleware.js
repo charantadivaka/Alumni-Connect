@@ -27,6 +27,25 @@ const protect = async (req, res, next) => {
             return res.status(403).json({ message: 'Account suspended. Contact admin.' });
         }
 
+        // Student Access Control: check college subscription status
+        if (user.role === 'student' && user.college) {
+            // Populate college to check status
+            const college = await require('../models/College').findById(user.college);
+            if (college) {
+                user.college = college; // Populate it for req.user
+                if (college.subscriptionStatus !== 'Active') {
+                    // Allow /api/auth/me and /api/auth/logout so the user can still be loaded and log out
+                    const path = req.originalUrl || req.url;
+                    if (!path.includes('/api/auth/me') && !path.includes('/api/auth/logout')) {
+                        return res.status(403).json({ 
+                            message: 'College subscription is not active.',
+                            code: 'COLLEGE_SUBSCRIPTION_EXPIRED'
+                        });
+                    }
+                }
+            }
+        }
+
         req.user = user;
         next();
     } catch (err) {

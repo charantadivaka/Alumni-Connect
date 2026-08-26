@@ -14,7 +14,7 @@ export const jobService = {
   updateStatus:(id, status) => api.patch(`/jobs/${id}/status`, { status }),
   duplicate: (id)           => api.post(`/jobs/${id}/duplicate`),
   remove:    (id)           => api.delete(`/jobs/${id}`),
-  report:    (id)           => api.post(`/jobs/${id}/report`),
+  report:    (id, data)     => api.post(`/jobs/${id}/report`, data),
 };
 
 export const applicationService = {

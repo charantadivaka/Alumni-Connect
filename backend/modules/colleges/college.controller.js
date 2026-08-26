@@ -75,7 +75,32 @@ const getCollegeFeeStatus = async (req, res, next) => {
     }
 };
 
+const getCollegeDetails = async (req, res, next) => {
+    try {
+        const result = await collegeService.getCollegeDetails(req.params.id);
+        sendSuccess(res, result);
+    } catch (err) {
+        next(err);
+    }
+};
+
+const renewSubscription = async (req, res, next) => {
+    try {
+        const college = await collegeService.renewSubscription(req.params.id, req.body);
+        sendSuccess(res, college, 'Subscription renewed successfully');
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
-    getColleges, getAllCollegesAdmin, createCollege,
-    updateCollege, deleteCollege, validateRollNumber, getCollegeFeeStatus
+    getColleges,
+    getAllCollegesAdmin,
+    createCollege,
+    updateCollege,
+    deleteCollege,
+    validateRollNumber,
+    getCollegeFeeStatus,
+    getCollegeDetails,
+    renewSubscription
 };
