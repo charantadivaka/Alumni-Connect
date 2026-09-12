@@ -61,7 +61,11 @@ const initElasticsearch = async () => {
             console.log('✅ Created "users" index in Elasticsearch');
         }
     } catch (error) {
-        console.error('⚠️ Elasticsearch initialization failed. Is it running?', error.message);
+        if (!process.env.ELASTICSEARCH_NODE && process.env.NODE_ENV !== 'production') {
+            console.log('📦 Elasticsearch not configured. Search sync is disabled for development.');
+        } else {
+            console.error('⚠️ Elasticsearch initialization failed. Is it running?', error.message);
+        }
         esClient = null; // Disable ES if it's down
     }
 };

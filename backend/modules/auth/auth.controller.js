@@ -9,11 +9,13 @@ const { jwt: jwtConfig } = require('../../shared/config');
 const setTokenCookie = (res, token) => {
     res.cookie('jwt', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production', 
+        // Use 'none' in production for cross-domain, keep 'strict' or 'lax' for local dev
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict', 
         maxAge: jwtConfig.cookieMaxAge,
     });
 };
+
 
 /** Initiate OTP registration */
 const sendOtp = async (req, res, next) => {
@@ -164,6 +166,8 @@ const adminLogin = async (req, res, next) => {
 const logout = (req, res) => {
     res.cookie('jwt', '', {
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
         expires: new Date(0),
     });
     sendSuccess(res, null, 'Logged out successfully');

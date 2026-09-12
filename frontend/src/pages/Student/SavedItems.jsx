@@ -149,7 +149,7 @@ const SavedItems = () => {
       case 'Referral':
       case 'Mentorship':
       case 'MockInterview':
-      case 'Resume':
+      case 'Resume': {
         const userId = d.author?._id || d.provider?._id || d.user?._id || d._id;
         return (
           <>
@@ -161,6 +161,7 @@ const SavedItems = () => {
             </button>
           </>
         );
+      }
       case 'Application':
         return (
           <button className="btn btn-outline btn-sm" onClick={(e) => { e.stopPropagation(); navigate(`../jobs-hub?tab=applications`); }}>
