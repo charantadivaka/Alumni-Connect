@@ -7,6 +7,9 @@ let esClient = null;
 try {
     esClient = new Client({
         node: ELASTICSEARCH_NODE,
+        auth: {
+            apiKey: process.env.ELASTICSEARCH_API_KEY // <-- Add this auth block!
+        },
         maxRetries: process.env.NODE_ENV === 'test' ? 0 : 5,
         requestTimeout: process.env.NODE_ENV === 'test' ? 1000 : 60000,
     });

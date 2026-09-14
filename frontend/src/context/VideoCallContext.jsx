@@ -70,6 +70,7 @@ export const VideoCallProvider = ({ children }) => {
     const incomingDataRef      = useRef(null);   // { offer, from } from incoming_call
     const pendingCandidatesRef = useRef([]);     // ICE candidates queued before remote SDP
     const remoteDescReadyRef   = useRef(false);  // has setRemoteDescription been called?
+    const activeSocketIdRef    = useRef(null);   // exact socket ID of the peer tab
     const callStatusRef        = useRef('idle'); // mirrors callStatus without closure staleness
     const sessionInfoRef       = useRef(null);   // mirrors sessionInfo
 
@@ -112,6 +113,7 @@ export const VideoCallProvider = ({ children }) => {
         recordedChunksRef.current = [];
         pendingCandidatesRef.current = [];
         remoteDescReadyRef.current = false;
+        activeSocketIdRef.current = null;
         screenSenderRef.current   = null;
 
         // Reset state
@@ -159,7 +161,9 @@ export const VideoCallProvider = ({ children }) => {
 
         pc.onicecandidate = ({ candidate }) => {
             if (candidate && socket) {
-                socket.emit('ice_candidate', { to: targetUserId, candidate });
+                // Route explicitly to the peer's socket ID if we have it, else fallback to user ID
+                const routeTo = activeSocketIdRef.current || targetUserId;
+                socket.emit('ice_candidate', { to: routeTo, candidate });
             }
         };
 
@@ -281,7 +285,9 @@ export const VideoCallProvider = ({ children }) => {
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
 
-            socket.emit('answer_call', { to: incoming.from, signal: answer });
+            // Connect specifically to the exact tab that called
+            activeSocketIdRef.current = incoming.callerSocket;
+            socket.emit('answer_call', { to: incoming.callerSocket, signal: answer });
         } catch (err) {
             console.error('[VideoCall] answerCall error:', err);
             alert(err.message || 'Failed to join the call. Please check your camera and microphone.');
@@ -292,15 +298,13 @@ export const VideoCallProvider = ({ children }) => {
     // ── Reject Incoming Call ──────────────────────────────────────────────────
     const rejectCall = useCallback(() => {
         const incoming = incomingDataRef.current;
-        if (incoming && socket) socket.emit('end_call', { to: incoming.from });
+        if (incoming && socket) socket.emit('end_call', { to: incoming.callerSocket || incoming.from });
         cleanupCall();
     }, [socket, cleanupCall]);
 
     // ── End Call (either party) ───────────────────────────────────────────────
     const endCall = useCallback(() => {
-        const targetId =
-            sessionInfoRef.current?.targetUserId ??
-            incomingDataRef.current?.from;
+        const targetId = activeSocketIdRef.current || sessionInfoRef.current?.targetUserId || incomingDataRef.current?.from;
         if (targetId && socket) socket.emit('end_call', { to: targetId });
         cleanupCall();
     }, [socket, cleanupCall]);
@@ -330,7 +334,7 @@ export const VideoCallProvider = ({ children }) => {
             try {
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
-                const targetUserId = sessionInfoRef.current?.targetUserId || incomingDataRef.current?.from;
+                const targetUserId = activeSocketIdRef.current || sessionInfoRef.current?.targetUserId || incomingDataRef.current?.from;
                 if (targetUserId) socket.emit('renegotiate_offer', { to: targetUserId, signal: offer });
             } catch (err) {
                 console.error('[WebRTC] renegotiation failed:', err);
@@ -420,7 +424,7 @@ export const VideoCallProvider = ({ children }) => {
             setIsRecording(true);
 
             // Notify the student that recording has started
-            const targetId = sessionInfoRef.current?.targetUserId;
+            const targetId = activeSocketIdRef.current || sessionInfoRef.current?.targetUserId;
             if (targetId && socket) socket.emit('recording_started', { to: targetId });
         } catch (err) {
             console.error('[Recording]', err);
@@ -435,7 +439,7 @@ export const VideoCallProvider = ({ children }) => {
         if (recorder && recorder.state !== 'inactive') {
             recorder.stop(); // triggers onstop → downloads the file
             setIsRecording(false);
-            const targetId = sessionInfoRef.current?.targetUserId;
+            const targetId = activeSocketIdRef.current || sessionInfoRef.current?.targetUserId;
             if (targetId && socket) socket.emit('recording_stopped', { to: targetId });
         }
     }, [user, socket]);
@@ -445,23 +449,24 @@ export const VideoCallProvider = ({ children }) => {
         if (!socket) return;
 
         // Alumni calls a student
-        const onIncomingCall = ({ signal, from, callerName, sessionId, sessionType }) => {
+        const onIncomingCall = ({ signal, from, callerSocket, callerName, sessionId, sessionType }) => {
             if (callStatusRef.current !== 'idle') {
                 // Already busy — politely reject
-                socket.emit('end_call', { to: from });
+                socket.emit('end_call', { to: callerSocket || from });
                 return;
             }
-            incomingDataRef.current = { offer: signal, from };
+            incomingDataRef.current = { offer: signal, from, callerSocket };
             setRemoteUserName(callerName);
             setSessionInfo({ targetUserId: from, targetName: callerName, sessionId, sessionType });
             setCallStatus('incoming');
         };
 
         // Student's answer arrives at alumni's side
-        const onCallAccepted = async ({ signal }) => {
+        const onCallAccepted = async ({ signal, answererSocket }) => {
             const pc = peerRef.current;
             if (!pc) return;
             try {
+                activeSocketIdRef.current = answererSocket;
                 await pc.setRemoteDescription(new RTCSessionDescription(signal));
                 remoteDescReadyRef.current = true;
                 await flushCandidates(pc);
@@ -498,7 +503,7 @@ export const VideoCallProvider = ({ children }) => {
                 await pc.setRemoteDescription(new RTCSessionDescription(signal));
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
-                const targetUserId = sessionInfoRef.current?.targetUserId || incomingDataRef.current?.from;
+                const targetUserId = activeSocketIdRef.current || sessionInfoRef.current?.targetUserId || incomingDataRef.current?.from;
                 if (targetUserId) socket.emit('renegotiate_answer', { to: targetUserId, signal: answer });
             } catch (e) {
                 console.error('[WebRTC] renegotiate offer:', e);

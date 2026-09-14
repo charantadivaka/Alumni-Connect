@@ -73,11 +73,11 @@ const initSocketManager = (server) => {
         });
 
         socket.on('call_user', ({ userToCall, signal, from, callerName, sessionId, sessionType }) => {
-            io.to(userToCall).emit('incoming_call', { signal, from, callerName, sessionId, sessionType });
+            io.to(userToCall).emit('incoming_call', { signal, from, callerSocket: socket.id, callerName, sessionId, sessionType });
         });
 
         socket.on('answer_call', ({ to, signal }) => {
-            io.to(to).emit('call_accepted', { signal });
+            io.to(to).emit('call_accepted', { signal, answererSocket: socket.id });
         });
 
         socket.on('ice_candidate', ({ to, candidate }) => {
