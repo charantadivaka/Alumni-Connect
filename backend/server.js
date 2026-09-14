@@ -38,6 +38,8 @@ const { initElasticsearch } = require('./config/elasticsearch');
 initElasticsearch();
 
 const app = express();
+// Required for express-rate-limit when hosted on a platform like Render (which uses reverse proxies)
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 // ── Socket.io ────────────────────────────────────────────────────────────────
